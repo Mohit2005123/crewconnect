@@ -3,9 +3,9 @@ import Image from 'next/image';
 import { useState } from 'react';
 import {Checkbox} from "@nextui-org/checkbox";
 import Link from 'next/link';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import {auth, db} from '../../lib/firebase';
-import {setDoc, doc} from 'firebase/firestore';
+import {setDoc, doc, getDoc} from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 export default function SignUp() {
   // Add state for password visibility
@@ -39,6 +39,40 @@ export default function SignUp() {
         }
     }
   }
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const userDoc = doc(db, "users", user.uid);
+      const userSnapshot = await getDoc(userDoc);
+
+      if (userSnapshot.exists()) {
+        // User already exists, prompt them to log in
+        setError("User already exists. Please log in instead.");
+        return;
+      }
+
+      // If user does not exist, proceed with signup
+      console.log("Prompting for admin status...");
+      const adminResponse = window.confirm("Are you signing up as an admin?");
+      const isAdmin = adminResponse;
+
+      await setDoc(userDoc, {
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        admin: isAdmin,
+        role: isAdmin ? "admin" : "employee",
+      });
+      console.log("User document created with admin status:", isAdmin);
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.log('Error in Google sign-in', error);
+      setError("Failed to sign in with Google. Please try again.");
+    }
+  };
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
     <div className="bg-[#FFFFFF] shadow-lg rounded-lg flex w-4/5 max-w-5xl h-[700px] overflow-hidden">
@@ -103,6 +137,7 @@ export default function SignUp() {
                   isSelected={showPassword}
                   onValueChange={setShowPassword}
                   size="lg"
+                  className="mr-4"
                 >
                   <span className="text-sm text-gray-600">Show password</span>
                 </Checkbox>
@@ -128,6 +163,7 @@ export default function SignUp() {
             <button
               type="button"
               className="w-full bg-white text-black border border-gray-300 py-3 rounded-3xl hover:bg-gray-100 transition font-sans flex items-center justify-center mt-4"
+              onClick={handleGoogleSignIn}
             >
               <Image
                 src="/signup/google-icon.svg"
@@ -138,6 +174,11 @@ export default function SignUp() {
               />
               Continue with Google
             </button>
+            {error && (
+              <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md text-center">
+                {error}
+              </div>
+            )}
           </form>
           <p className="mt-4 text-gray-500 text-center">
             Already have an account?{' '}

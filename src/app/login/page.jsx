@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { Checkbox } from '@nextui-org/checkbox';
 import Link from 'next/link';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 
@@ -29,6 +29,18 @@ export default function Login() {
         }
     }
   }
+
+  const handleGoogleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      router.push("/dashboard");
+    } catch (error) {
+      console.log('Error in Google login', error);
+      setError("Something went wrong with Google login, please try again");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-[#FFFFFF] shadow-lg rounded-lg flex w-4/5 max-w-5xl h-[700px] overflow-hidden">
@@ -53,6 +65,11 @@ export default function Login() {
             Welcome back! Please log in to your account.
           </p>
           <form className="space-y-4" onSubmit={handleLogin}>
+            {error && (
+              <div className="text-red-500 text-center mb-4">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
               <label htmlFor="email" className="block text-[#666666] text-sm font-medium font-sans">
                 Email
@@ -65,7 +82,6 @@ export default function Login() {
                 onChange={(e)=>setEmail(e.target.value)}
               />
             </div>
-
             <div className="space-y-2">
               <label htmlFor="password" className="block text-[#666666] text-sm font-medium font-sans">
                 Password
@@ -99,6 +115,7 @@ export default function Login() {
             <button
               type="button"
               className="w-full bg-white text-black border border-gray-300 py-3 rounded-3xl hover:bg-gray-100 transition font-sans flex items-center justify-center mt-4"
+              onClick={handleGoogleLogin}
             >
               <Image
                 src="/signup/google-icon.svg"
