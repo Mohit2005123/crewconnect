@@ -37,19 +37,21 @@ export default function AdminDashboard() {
           setError('Error loading employee data. Please try again later.');
         });
 
-        const tasksQuery = query(collection(db, 'tasks'));
-        const unsubscribeTasks = onSnapshot(tasksQuery, (querySnapshot) => {
-          const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setTasks(tasksList);
-        }, (error) => {
-          console.error('Error fetching tasks:', error);
-          setError('Error loading task data. Please try again later.');
-        });
+        if (user) {
+          const tasksQuery = query(collection(db, 'tasks'), where('assignedBy', '==', user.uid));
+          const unsubscribeTasks = onSnapshot(tasksQuery, (querySnapshot) => {
+            const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setTasks(tasksList);
+          }, (error) => {
+            console.error('Error fetching tasks:', error);
+            setError('Error loading task data. Please try again later.');
+          });
 
-        return () => {
-          unsubscribeEmployees();
-          unsubscribeTasks();
-        };
+          return () => {
+            unsubscribeEmployees();
+            unsubscribeTasks();
+          };
+        }
       } catch (error) {
         console.error('Error setting up listeners:', error);
         setError('Error loading data. Please try again later.');
@@ -57,7 +59,7 @@ export default function AdminDashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleAssignTask = async (e) => {
     e.preventDefault();
@@ -65,6 +67,7 @@ export default function AdminDashboard() {
       await addDoc(collection(db, 'tasks'), {
         ...newTask,
         status: 'pending',
+        assignedBy: user.uid, // Add assignedBy field
         createdAt: new Date()
       });
       setNewTask({ title: '', assignedTo: '' });
@@ -134,4 +137,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
