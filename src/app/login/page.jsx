@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -33,8 +35,20 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      router.push("/dashboard");
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if user exists in Firestore
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        console.log('User exists in Firestore:', userDoc.data());
+        router.push("/dashboard");
+      } else {
+        console.log('User does not exist in Firestore');
+        setError("User does not exist in our records. Please sign up first.");
+      }
     } catch (error) {
       console.log('Error in Google login', error);
       setError("Something went wrong with Google login, please try again");
