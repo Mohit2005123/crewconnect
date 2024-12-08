@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react';
 import { collection, query, where, onSnapshot, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
@@ -47,7 +46,7 @@ export default function EmployeeDashboard() {
   const handleCompleteTask = async (taskId) => {
     try {
       await updateDoc(doc(db, 'tasks', taskId), {
-        status: 'completed',
+        status: 'requested',
         completedAt: new Date()
       });
     } catch (error) {

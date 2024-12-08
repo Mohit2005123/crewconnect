@@ -54,7 +54,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div>
+    <div className="bg-white text-black">
       {userRole === 'admin' ? <AdminDashboard /> : <EmployeeDashboard />}
     </div>
   );
