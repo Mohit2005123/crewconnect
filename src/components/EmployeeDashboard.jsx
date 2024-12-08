@@ -10,6 +10,8 @@ export default function EmployeeDashboard() {
   const router = useRouter();
   const [tasks, setTasks] = useState([]);
   const [error, setError] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -76,24 +78,123 @@ export default function EmployeeDashboard() {
         ) : (
           <ul className="space-y-2">
             {tasks.map((task) => (
-              <li key={task.id} className="border p-2 rounded flex justify-between items-center">
+              <li key={task.id} className="border p-4 rounded flex justify-between items-center">
                 <div>
                   <p><strong>Title:</strong> {task.title}</p>
                   <p><strong>Status:</strong> {task.status}</p>
                 </div>
-                {task.status === 'pending' && (
+                <div className="flex gap-2">
                   <button
-                    onClick={() => handleCompleteTask(task.id)}
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
+                    onClick={() => {
+                      setSelectedTask(task);
+                      setIsInfoModalOpen(true);
+                    }}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
                   >
-                    Mark as Complete
+                    Info
                   </button>
-                )}
+                  {task.status === 'pending' && (
+                    <button
+                      onClick={() => handleCompleteTask(task.id)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
+                    >
+                      Mark as Complete
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {/* Task Info Modal */}
+      {isInfoModalOpen && selectedTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-black">Task Details</h2>
+              <button
+                onClick={() => {
+                  setIsInfoModalOpen(false);
+                  setSelectedTask(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-medium text-black">Title</h3>
+                <p className="text-gray-600">{selectedTask.title}</p>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-black">Description</h3>
+                <p className="text-gray-600">{selectedTask.description}</p>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-black">Deadline</h3>
+                <p className="text-gray-600">
+                  {selectedTask.deadline?.toDate().toLocaleString()}
+                </p>
+              </div>
+
+              {selectedTask.referenceLinks && selectedTask.referenceLinks.length > 0 && (
+                <div>
+                  <h3 className="font-medium text-black">Reference Links</h3>
+                  <ul className="list-disc pl-5">
+                    {selectedTask.referenceLinks.map((link, index) => (
+                      <li key={index}>
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-600 break-all"
+                        >
+                          {link}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div>
+                <h3 className="font-medium text-black">Status</h3>
+                <p className="text-gray-600 capitalize">{selectedTask.status}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-2">
+              {selectedTask.status === 'pending' && (
+                <button
+                  onClick={() => {
+                    handleCompleteTask(selectedTask.id);
+                    setIsInfoModalOpen(false);
+                    setSelectedTask(null);
+                  }}
+                  className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+                >
+                  Mark as Complete
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setIsInfoModalOpen(false);
+                  setSelectedTask(null);
+                }}
+                className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
