@@ -43,7 +43,6 @@ export default function SignUp() {
         if (response.status === 200) {
           // setError("Admin signup request sent. Please wait for approval.");
           console.log(response.data);
-          await new Promise(resolve => setTimeout(resolve, 20000));
           router.push("/pending-approval"); // Redirect to a pending approval page
         } else {
           setError("Failed to send admin signup request. Please try again.");
