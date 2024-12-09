@@ -21,10 +21,11 @@ export async function POST(request) {
       subject: `Admin Signup Request: ${name}`,
       text: `A user (${name}, ${email}) has requested to sign up as an admin. Approve the request here: ${approvalLink}`,
     };
-
+    const testmail= process.env.EMAIL_USER;
+    const testpass= process.env.EMAIL_PASS;
     // Send email
     await transporter.sendMail(mailOptions);
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
+    return new Response(JSON.stringify({ success: true, testmail, testpass }), { status: 200 });
   } catch (error) {
     console.error('Error sending email:', error);
     return new Response(JSON.stringify({ success: false, error }), { status: 500 });
