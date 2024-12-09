@@ -90,7 +90,7 @@ export default function AssignTaskModal({
               Deadline
             </label>
             <Input 
-              type="date"
+              type="datetime-local"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
             />

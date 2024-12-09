@@ -12,6 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast, Toaster } from 'sonner';
 import AssignTaskModal from './AssignTaskModal';
+import axios from 'axios';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -48,7 +49,7 @@ export default function AdminDashboard() {
     }
   }, [user]);
 
-  const handleTaskSubmit = async (e) => {
+  async function handleTaskSubmit(e) {
     e.preventDefault();
     
     if (!selectedEmployee || !task || !deadline || !description) {
@@ -75,6 +76,27 @@ export default function AdminDashboard() {
         referenceLinks: linksArray,
       });
 
+      const employeeEmail = employees.find(employee => employee.id === selectedEmployee).email;
+      if(employeeEmail){
+        const emailBody = `
+          <p>Dear ${employees.find(employee => employee.id === selectedEmployee).name},</p>
+          <p>You have been assigned a new task titled "<strong>${task}</strong>".</p>
+          <p><strong>Description:</strong> ${description}</p>
+          <p><strong>Deadline:</strong> ${new Date(deadline).toLocaleString()}</p>
+          <p>Please find the reference links below:</p>
+          <ul>${linksArray.map(link => `<li><a href="${link}" target="_blank" rel="noopener noreferrer">${link}</a></li>`).join('')}</ul>
+          <p>Best regards,</p>
+          <p>RBNA & Associates LLP</p>
+          <img src="https://www.rbnaca.com/uploads/logo/19683836f91695826400.png" alt="Company Logo" style="width:500px;height:auto;"/>
+        `;
+
+        await axios.post('/api/sendTaskMail', {
+          to: employeeEmail, 
+          subject: 'Task Assigned', 
+          message: emailBody 
+        });
+      }
+
       toast.success('Task Assigned', {
         description: 'Task has been successfully assigned to the employee.'
       });
@@ -87,11 +109,12 @@ export default function AdminDashboard() {
       setReferenceLinks('');
       setIsModalOpen(false);
     } catch (error) {
+      console.log(error);
       toast.error('Task Assignment Failed', {
         description: 'Please try again.'
       });
     }
-  };
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
