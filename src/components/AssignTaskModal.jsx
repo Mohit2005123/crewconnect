@@ -38,7 +38,8 @@ export default function AssignTaskModal({
   setDescription,
   referenceLinks,
   setReferenceLinks,
-  handleTaskSubmit
+  handleTaskSubmit,
+  isLoading
 }) {
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -117,8 +118,12 @@ export default function AssignTaskModal({
               placeholder="Enter reference links (one per line)"
             />
           </div>
-          <Button type="submit" className="w-full">
-            <PlusCircle className="mr-2" /> Assign Task
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className={`btn ${isLoading ? 'loading' : ''}`}
+          >
+            {isLoading ? 'Assigning Task...' : 'Assign Task'}
           </Button>
         </form>
       </DialogContent>

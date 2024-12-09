@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [description, setDescription] = useState('');
   const [referenceLinks, setReferenceLinks] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -58,6 +59,8 @@ export default function AdminDashboard() {
       });
       return;
     }
+
+    setIsLoading(true);
 
     try {
       const linksArray = referenceLinks
@@ -113,6 +116,8 @@ export default function AdminDashboard() {
       toast.error('Task Assignment Failed', {
         description: 'Please try again.'
       });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -152,6 +157,7 @@ export default function AdminDashboard() {
               referenceLinks={referenceLinks}
               setReferenceLinks={setReferenceLinks}
               handleTaskSubmit={handleTaskSubmit}
+              isLoading={isLoading}
             />
           </CardContent>
         </Card>
