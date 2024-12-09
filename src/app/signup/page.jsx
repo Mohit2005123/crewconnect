@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } f
 import {auth, db} from '../../lib/firebase';
 import {setDoc, doc, getDoc} from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 export default function SignUp() {
   // Add state for password visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -16,29 +17,44 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
-  const handleSignup=async(e)=>{
+  const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
-    try{
-       const userCredential=await createUserWithEmailAndPassword(auth, email, password);
-       const user=userCredential.user;
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
       await setDoc(doc(db, "users", user.uid), {
-        uid:user.uid,
-        email:user.email,
-        name:fullName,
-        admin:isAdmin,
-        role:isAdmin?"admin":"employee",
+        uid: user.uid,
+        email: user.email,
+        name: fullName,
+        admin: isAdmin,
+        role: isAdmin ? "pending" : "employee", // Set role to 'pending' for admin signup
       });
-      router.push("/dashboard");
-    } catch (error) {
-        console.log('Error in signup', error);
-        if(error.code==="auth/email-already-in-use"){
-          setError("Email already in use");
-        }else{
-          setError("Something went wrong please try again");
+  
+      if (isAdmin) {
+        // Generate an approval link
+        const approvalLink = `${window.location.origin}/api/approveAdmin?uid=${user.uid}`;
+        const response = await axios.post('/api/sendAdminEmail', {
+          email,
+          name: fullName,
+          approvalLink,
+        });
+        
+        if (response.status === 200) {
+          // setError("Admin signup request sent. Please wait for approval.");
+          router.push("/pending-approval"); // Redirect to a pending approval page
+        } else {
+          setError("Failed to send admin signup request. Please try again.");
         }
+      } else {
+        router.push("/dashboard"); // Redirect directly to the dashboard for non-admins
+      }
+    } catch (error) {
+      console.error('Error in signup:', error);
+      setError("Something went wrong. Please try again.");
     }
-  }
+  };
+  
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
@@ -63,11 +79,26 @@ export default function SignUp() {
         email: user.email,
         name: user.displayName,
         admin: isAdmin,
-        role: isAdmin ? "admin" : "employee",
+        role: isAdmin ? "pending" : "employee", // Set role to 'pending' for admin signup
       });
-      console.log("User document created with admin status:", isAdmin);
 
-      router.push("/dashboard");
+      if (isAdmin) {
+        // Generate an approval link
+        const approvalLink = `${window.location.origin}/api/approveAdmin?uid=${user.uid}`;
+        const response = await axios.post('/api/sendAdminEmail', {
+          email: user.email,
+          name: user.displayName,
+          approvalLink,
+        });
+
+        if (response.status === 200) {
+          router.push("/pending-approval"); // Redirect to a pending approval page
+        } else {
+          setError("Failed to send admin signup request. Please try again.");
+        }
+      } else {
+        router.push("/dashboard"); // Redirect directly to the dashboard for non-admins
+      }
     } catch (error) {
       console.log('Error in Google sign-in', error);
       setError("Failed to sign in with Google. Please try again.");
