@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-const email='mohitmongia2005@gmail.com';
+const useremail='mohitmongia2005@gmail.com';
 const password='gpuc cyte sgva nmou';
 export async function POST(request) {
   const { email, name, approvalLink, to } = await request.json();
@@ -9,15 +9,15 @@ export async function POST(request) {
     const transporter = nodemailer.createTransport({
       service: 'gmail', // Or use another service like SendGrid
       auth: {
-        user: email, // Your email address
+        user: useremail, // Your email address
         pass: password, // Your email password or app-specific password
       },
     });
 
     // Email details
     const mailOptions = {
-      from: email,
-      to: email, // Your email address to receive notifications
+      from: useremail,
+      to: useremail, // Your email address to receive notifications
       subject: `Admin Signup Request: ${name}`,
       text: `A user (${name}, ${email}) has requested to sign up as an admin. Approve the request here: ${approvalLink}`,
     };
