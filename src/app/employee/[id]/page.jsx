@@ -1,13 +1,41 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation'; // or manually unwrap the params Promise
-import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { useParams, useRouter } from 'next/navigation'; // Add useRouter
+import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc, getDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
-import { getDoc } from 'firebase/firestore';
+import { useAuth } from '../../../components/AuthProvider'; // Add this import
 
 export default function EmployeeTasks() {
-  const params = useParams(); // Unwrap params as a Promise
+  const router = useRouter();
+  const { user } = useAuth(); // Get current user
+  const params = useParams();
+  
+  // Add loading state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Move auth check to separate useEffect
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      
+      // Check if user has admin role
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists() || userDoc.data().role !== 'admin') {
+        router.push('/dashboard');
+      } else {
+        setIsAdmin(true);
+      }
+      setIsLoading(false);
+    };
+    
+    checkAuth();
+  }, [user, router]);
+
   const [tasks, setTasks] = useState([]);
   const [employeeName, setEmployeeName] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
@@ -103,13 +131,81 @@ export default function EmployeeTasks() {
     }
   };
 
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '', description: '' });
+  const [isCreating, setIsCreating] = useState(false);
+  const [deadline, setDeadline] = useState('');
+  const [referenceLinks, setReferenceLinks] = useState('');
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+
+    if (!newTask.title.trim() || !newTask.description.trim()) {
+      alert('Title and description cannot be empty.');
+      return;
+    }
+
+    setIsCreating(true);
+    
+    const linksArray = getLinksArray(referenceLinks);
+    try {
+      await addDoc(collection(db, 'tasks'), {
+        title: newTask.title,
+        description: newTask.description,
+        assignedTo: employeeId,
+        status: 'pending',
+        createdAt: new Date(),
+        assignedBy: user.uid,
+        deadline: new Date(deadline),
+        referenceLinks: linksArray
+      });
+      
+      setIsCreateModalOpen(false);
+      setNewTask({ title: '', description: '' });
+      setDeadline('');
+      setReferenceLinks('');
+    } catch (error) {
+      console.error('Error creating task:', error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const getLinksArray = (links) => {
+    return links
+      .split('\n')
+      .map(link => link.trim())
+      .filter(link => link !== '');
+  };
+
+  // Add loading and admin check before rendering main content
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null; // Return nothing while redirecting
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-4">
-            {employeeName ? `${employeeName}'s Tasks` : 'Loading...'}
-          </h1>
+          <div className="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 className="text-3xl font-bold text-gray-800">
+              {employeeName ? `${employeeName}'s Tasks` : 'Loading...'}
+            </h1>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Create Task
+            </button>
+          </div>
           
           {tasks.length === 0 ? (
             <div className="text-center py-12">
@@ -192,6 +288,7 @@ export default function EmployeeTasks() {
                 onClick={() => setIsModalOpen(false)}
                 disabled={isUpdating}
                 className={`px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors ${
+      
                   isUpdating ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -216,6 +313,83 @@ export default function EmployeeTasks() {
                 {isUpdating ? 'Updating...' : 'Accept'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold mb-4">Create New Task</h3>
+            <form onSubmit={handleCreateTask}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    required
+                    value={newTask.description}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    rows="3"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Deadline
+                  </label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reference Links
+                  </label>
+                  <textarea
+                    value={referenceLinks}
+                    onChange={(e) => setReferenceLinks(e.target.value)}
+                    placeholder="Enter links (one per line)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    rows="3"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  disabled={isCreating}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
+                >
+                  {isCreating ? 'Creating...' : 'Create Task'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

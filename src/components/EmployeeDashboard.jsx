@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, updateDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, arrayUnion } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../components/AuthProvider';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,11 @@ export default function EmployeeDashboard() {
   const [error, setError] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isJoinTeamModalOpen, setIsJoinTeamModalOpen] = useState(false);
+  const [teamId, setTeamId] = useState('');
+  const [joinTeamError, setJoinTeamError] = useState(null);
+  const [taskAssigners, setTaskAssigners] = useState({});
+
   useEffect(() => {
     if (user) {
       const userRef = doc(db, 'users', user.uid);
@@ -29,9 +34,21 @@ export default function EmployeeDashboard() {
     if (userAuth) {
       try {
         const q = query(collection(db, 'tasks'), where('assignedTo', '==', userAuth.uid));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
           const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setTasks(tasksList);
+          
+          // Fetch assigner details for each task
+          const assignersData = {};
+          for (const task of tasksList) {
+            if (task.assignedBy && !taskAssigners[task.assignedBy]) {
+              const assignerDoc = await getDoc(doc(db, 'users', task.assignedBy));
+              if (assignerDoc.exists()) {
+                assignersData[task.assignedBy] = assignerDoc.data().name || assignerDoc.data().email;
+              }
+            }
+          }
+          setTaskAssigners(prev => ({ ...prev, ...assignersData }));
         }, (error) => {
           console.error('Error fetching tasks:', error);
           setError('Error loading task data. Please try again later.');
@@ -69,6 +86,33 @@ export default function EmployeeDashboard() {
     }
   };
 
+  const handleJoinTeam = async (e) => {
+    e.preventDefault();
+    setJoinTeamError(null);
+    
+    try {
+      // Get team reference
+      const teamRef = doc(db, 'teams', teamId);
+      const teamDoc = await getDoc(teamRef);
+      
+      if (!teamDoc.exists()) {
+        setJoinTeamError('Invalid team ID');
+        return;
+      }
+
+      // Update team with new employee
+      await updateDoc(teamRef, {
+        employees: arrayUnion(user.uid)
+      });
+
+      setIsJoinTeamModalOpen(false);
+      setTeamId('');
+    } catch (error) {
+      console.error('Error joining team:', error);
+      setJoinTeamError('Failed to join team. Please try again.');
+    }
+  };
+
   if (error) {
     return (
       <div className="container mx-auto p-4">
@@ -83,6 +127,14 @@ export default function EmployeeDashboard() {
   return (
     <div className="container mx-auto p-6 bg-gray-50 rounded-lg shadow-lg">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Employee Dashboard</h1>
+      <div className="mb-6">
+        <button
+          onClick={() => setIsJoinTeamModalOpen(true)}
+          className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors shadow"
+        >
+          Join Team
+        </button>
+      </div>
       <div>
         <h2 className="text-2xl font-semibold mb-4 text-gray-700">Your Tasks</h2>
         {tasks.length === 0 ? (
@@ -94,6 +146,7 @@ export default function EmployeeDashboard() {
                 <div>
                   <p className="text-lg font-medium text-gray-800"><strong>Title:</strong> {task.title}</p>
                   <p className="text-sm text-gray-600"><strong>Status:</strong> {task.status}</p>
+                  <p className="text-sm text-gray-600"><strong>Assigned by:</strong> {taskAssigners[task.assignedBy] || 'Loading...'}</p>
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -130,6 +183,52 @@ export default function EmployeeDashboard() {
         }}
         onComplete={handleCompleteTask}
       />
+
+      {/* Add Join Team Modal */}
+      {isJoinTeamModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-2xl font-bold mb-4">Join Team</h2>
+            <form onSubmit={handleJoinTeam}>
+              <div className="mb-4">
+                <label htmlFor="teamId" className="block text-sm font-medium text-gray-700 mb-2">
+                  Enter Team ID
+                </label>
+                <input
+                  type="text"
+                  id="teamId"
+                  value={teamId}
+                  onChange={(e) => setTeamId(e.target.value)}
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              {joinTeamError && (
+                <p className="text-red-500 text-sm mb-4">{joinTeamError}</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsJoinTeamModalOpen(false);
+                    setTeamId('');
+                    setJoinTeamError(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors"
+                >
+                  Join
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

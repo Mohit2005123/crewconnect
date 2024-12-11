@@ -12,7 +12,7 @@ export async function GET(request) {
   try {
     // Update user document to set admin status
     const userDoc = doc(db, 'users', uid);
-    await updateDoc(userDoc, { admin: true, role: 'admin' });
+    await updateDoc(userDoc, { admin: true, role: 'admin', teams: [] });
 
     return new Response("User has been approved as admin.", { status: 200 });
   } catch (error) {
