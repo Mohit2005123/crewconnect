@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
-import { collection, addDoc, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, updateDoc, arrayUnion, deleteDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import CreateTeamModal from './CreateTeamModal';
@@ -107,6 +107,30 @@ function TeamsDashboard() {
         router.push(`/teams/${teamId}`);
     };
 
+    const handleDeleteTeam = async (teamId) => {
+        if (!window.confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            // Delete team from user's teams array
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+                teams: teams.filter(team => team.id !== teamId).map(team => team.id)
+            });
+
+            // Delete the team document
+            await deleteDoc(doc(db, 'teams', teamId));
+
+            // Update local state
+            setTeams(teams.filter(team => team.id !== teamId));
+            alert('Team deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting team:', error);
+            alert('Failed to delete team.');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-16 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
@@ -179,6 +203,8 @@ function TeamsDashboard() {
                                     userId={userId}
                                     onCopyTeamId={handleCopyTeamId}
                                     onViewTeam={handleViewTeam}
+                                    onDeleteTeam={handleDeleteTeam}
+                                    isAdmin={team.admin=== userId}
                                 />
                             </div>
                         ))}

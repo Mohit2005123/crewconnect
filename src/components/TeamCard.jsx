@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function TeamCard({ team, userId, onCopyTeamId, onViewTeam }) {
+function TeamCard({ team, userId, onCopyTeamId, onViewTeam, onDeleteTeam, isAdmin }) {
     const [copying, setCopying] = useState(false);
 
     const handleCopy = (teamId) => {
@@ -48,6 +48,16 @@ function TeamCard({ team, userId, onCopyTeamId, onViewTeam }) {
                     )}
                     {copying ? 'Copied!' : 'Copy Team ID'}
                 </button>
+            </div>
+            <div className="mt-4 flex justify-between space-x-2">
+                {isAdmin && (
+                    <button
+                        onClick={() => onDeleteTeam(team.id)}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
         </div>
     );
