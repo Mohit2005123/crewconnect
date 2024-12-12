@@ -8,6 +8,7 @@ import AdminDashboard from '../../components/AdminDashboard';
 import EmployeeDashboard from '../../components/EmployeeDashboard';
 import { useRouter } from 'next/navigation';
 import TeamsDashboard from '../../components/TeamsDashboard';
+import Navbar from '@/components/Navbar';
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const [userRole, setUserRole] = useState(null);
@@ -55,6 +56,7 @@ export default function Dashboard() {
 
   return (
     <div className="bg-white text-black">
+      <Navbar></Navbar>
       {userRole === 'admin' ? <TeamsDashboard /> : <EmployeeDashboard />}
     </div>
   );
