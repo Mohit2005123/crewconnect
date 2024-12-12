@@ -6,6 +6,8 @@ import { useAuth } from '../components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import TaskInfoModal from './TaskInfoModal';
 import axios from 'axios';
+import JoinTeamModal from './JoinTeamModal';
+
 export default function EmployeeDashboard() {
   const { user } = useAuth();
   const router = useRouter();
@@ -14,8 +16,6 @@ export default function EmployeeDashboard() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isJoinTeamModalOpen, setIsJoinTeamModalOpen] = useState(false);
-  const [teamId, setTeamId] = useState('');
-  const [joinTeamError, setJoinTeamError] = useState(null);
   const [taskAssigners, setTaskAssigners] = useState({});
 
   useEffect(() => {
@@ -83,33 +83,6 @@ export default function EmployeeDashboard() {
     } catch (error) {
       console.error('Error completing task:', error);
       setError('Error updating task. Please try again later.');
-    }
-  };
-
-  const handleJoinTeam = async (e) => {
-    e.preventDefault();
-    setJoinTeamError(null);
-    
-    try {
-      // Get team reference
-      const teamRef = doc(db, 'teams', teamId);
-      const teamDoc = await getDoc(teamRef);
-      
-      if (!teamDoc.exists()) {
-        setJoinTeamError('Invalid team ID');
-        return;
-      }
-
-      // Update team with new employee
-      await updateDoc(teamRef, {
-        employees: arrayUnion(user.uid)
-      });
-
-      setIsJoinTeamModalOpen(false);
-      setTeamId('');
-    } catch (error) {
-      console.error('Error joining team:', error);
-      setJoinTeamError('Failed to join team. Please try again.');
     }
   };
 
@@ -184,51 +157,12 @@ export default function EmployeeDashboard() {
         onComplete={handleCompleteTask}
       />
 
-      {/* Add Join Team Modal */}
-      {isJoinTeamModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-2xl font-bold mb-4">Join Team</h2>
-            <form onSubmit={handleJoinTeam}>
-              <div className="mb-4">
-                <label htmlFor="teamId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Enter Team ID
-                </label>
-                <input
-                  type="text"
-                  id="teamId"
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              {joinTeamError && (
-                <p className="text-red-500 text-sm mb-4">{joinTeamError}</p>
-              )}
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsJoinTeamModalOpen(false);
-                    setTeamId('');
-                    setJoinTeamError(null);
-                  }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors"
-                >
-                  Join
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Replace the old modal with the new component */}
+      <JoinTeamModal 
+        isOpen={isJoinTeamModalOpen}
+        onClose={() => setIsJoinTeamModalOpen(false)}
+        userId={user?.uid}
+      />
     </div>
   );
 }
