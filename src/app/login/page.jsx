@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { Checkbox } from '@nextui-org/checkbox';
 import Link from 'next/link';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
@@ -47,6 +47,8 @@ export default function Login() {
         router.push("/dashboard");
       } else {
         console.log('User does not exist in Firestore');
+        // Sign out and delete the user from Authentication
+        await user.delete();
         setError("User does not exist in our records. Please sign up first.");
       }
     } catch (error) {

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'; // Add useRouter
 import { collection, query, where, onSnapshot, updateDoc, doc, deleteDoc, getDoc, addDoc } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../components/AuthProvider'; // Add this import
+import axios from 'axios';
 
 export default function EmployeeTasks() {
   const router = useRouter();
@@ -149,6 +150,12 @@ export default function EmployeeTasks() {
     
     const linksArray = getLinksArray(referenceLinks);
     try {
+      // Get employee email from users collection
+      const employeeDoc = await getDoc(doc(db, 'users', employeeId));
+      const employeeEmail = employeeDoc.data().email;
+      const employeeName = employeeDoc.data().name;
+      
+      // Create the task
       await addDoc(collection(db, 'tasks'), {
         title: newTask.title,
         description: newTask.description,
@@ -159,18 +166,43 @@ export default function EmployeeTasks() {
         deadline: new Date(deadline),
         referenceLinks: linksArray
       });
-      
+
+      // Send email notification using axios
+      await axios.post('/api/sendTaskMail', {
+        to: employeeEmail,
+        subject: `New Task Assigned: ${newTask.title}`,
+        message: `
+          <h2>Hello ${employeeName},</h2>
+          <p>A new task has been assigned to you:</p>
+          <h3>${newTask.title}</h3>
+          <p><strong>Description:</strong><br>${newTask.description}</p>
+          <p><strong>Deadline:</strong> ${new Date(deadline).toLocaleString()}</p>
+          ${linksArray.length > 0 ? `
+            <p><strong>Reference Links:</strong></p>
+            <ul>
+              ${linksArray.map(link => `<li><a href="${link}">${link}</a></li>`).join('')}
+            </ul>
+          ` : ''}
+          <p>Please log in to your dashboard to view the complete task details and get started.</p>
+          <p>Best regards,<br>RBNA & Associates LLP</p>
+        `
+      });
+
       setIsCreateModalOpen(false);
       setNewTask({ title: '', description: '' });
       setDeadline('');
       setReferenceLinks('');
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error creating task or sending notification:', error);
+      if (axios.isAxiosError(error)) {
+        alert(`Task created but failed to send email: ${error.response?.data?.message || error.message}`);
+      } else {
+        alert('Task created but there was an error sending the email notification.');
+      }
     } finally {
       setIsCreating(false);
     }
   };
-
   const getLinksArray = (links) => {
     return links
       .split('\n')
