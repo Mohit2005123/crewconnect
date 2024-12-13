@@ -198,24 +198,24 @@ export default function EmployeeTasks() {
                 <h2 className="text-xl font-semibold text-gray-700 mb-4">
                   Completed Tasks ({completedTasks.length})
                 </h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
                   {completedTasks.map((task) => (
                     <div
                       key={task.id}
                       onClick={() => handleTaskClick(task)}
-                      className={`bg-white border rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 relative
+                      className={`bg-white border rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 relative flex justify-between items-center
                         ${task.status === 'requested' ? 'border-purple-200 cursor-pointer' : 'border-gray-200'}`}
                     >
-                      <h3 className="font-semibold text-lg text-gray-800 mb-2">
-                        {task.title}
-                      </h3>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center">
-                          <span className="text-sm text-gray-600 font-medium">Status:</span>
-                          <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
-                            {task.status === 'requested' ? 'Requested ⏳' : task.status}
+                      <h3 className="font-semibold text-gray-800">{task.title}</h3>
+                      <div className="flex items-center gap-4">
+                        {task.deadline && (
+                          <span className="text-sm text-gray-600">
+                            Due: {task.deadline?.toDate?.().toLocaleDateString() || new Date(task.deadline).toLocaleDateString()}
                           </span>
-                        </div>
+                        )}
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                          {task.status === 'requested' ? 'Requested ⏳' : task.status}
+                        </span>
                         <button
                           onClick={(e) => handleInfoClick(task, e)}
                           className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
@@ -238,22 +238,22 @@ export default function EmployeeTasks() {
                 <h2 className="text-xl font-semibold text-gray-700 mb-4">
                   Pending Tasks ({pendingTasks.length})
                 </h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
                   {pendingTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200"
+                      className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 flex justify-between items-center"
                     >
-                      <h3 className="font-semibold text-lg text-gray-800 mb-2">
-                        {task.title}
-                      </h3>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center">
-                          <span className="text-sm text-gray-600 font-medium">Status:</span>
-                          <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
-                            {task.status}
+                      <h3 className="font-semibold text-gray-800">{task.title}</h3>
+                      <div className="flex items-center gap-4">
+                        {task.deadline && (
+                          <span className="text-sm text-gray-600">
+                            Due: {task.deadline?.toDate?.().toLocaleDateString() || new Date(task.deadline).toLocaleDateString()}
                           </span>
-                        </div>
+                        )}
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                          {task.status}
+                        </span>
                         <button
                           onClick={(e) => handleInfoClick(task, e)}
                           className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
