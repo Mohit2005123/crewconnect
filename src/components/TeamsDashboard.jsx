@@ -6,13 +6,14 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import CreateTeamModal from './CreateTeamModal';
 import TeamCard from './TeamCard';
-
+import JoinTeamModal from './JoinTeamModal';
 function TeamsDashboard() {
     const [teamName, setTeamName] = useState('');
     const [userId, setUserId] = useState(null);
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isJoinModalOpen, setJoinModalOpen] = useState(false);
     const router = useRouter();
     const [userName, setUserName]= useState('');
     useEffect(() => {
@@ -144,8 +145,8 @@ function TeamsDashboard() {
                     </p>
                 </div>
 
-                {/* Action Button */}
-                <div className="flex justify-center mb-12">
+                {/* Action Buttons */}
+                <div className="flex justify-center mb-12 space-x-4">
                     <button
                         onClick={() => setIsModalOpen(true)}
                         disabled={!userId}
@@ -166,13 +167,60 @@ function TeamsDashboard() {
                             <span>Create New Team</span>
                         </span>
                     </button>
-                </div>
 
+                    <button
+                        onClick={() => setJoinModalOpen(true)}
+                        disabled={!userId}
+                        className={`
+                            group relative px-6 py-3 rounded-full text-white font-medium
+                            transition-all duration-300 ease-in-out transform hover:scale-105
+                            shadow-lg hover:shadow-xl
+                            ${userId 
+                                ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800' 
+                                : 'bg-gray-400 cursor-not-allowed'
+                            }
+                        `}
+                    >
+                        <span className="flex items-center space-x-2">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            <span>Join a Team</span>
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => router.push('/tasks')}
+                        disabled={!userId}
+                        className={`
+                            group relative px-6 py-3 rounded-full text-white font-medium
+                            transition-all duration-300 ease-in-out transform hover:scale-105
+                            shadow-lg hover:shadow-xl
+                            ${userId 
+                                ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800' 
+                                : 'bg-gray-400 cursor-not-allowed'
+                            }
+                        `}
+                    >
+                        <span className="flex items-center space-x-2">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            <span>See Your Tasks</span>
+                        </span>
+                    </button>
+                </div>
                 <CreateTeamModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     userId={userId}
                     onTeamCreated={() => fetchUserTeams(userId)}
+                />
+                <JoinTeamModal
+                    isOpen={isJoinModalOpen}
+                    onClose={() => setJoinModalOpen(false)}
+                    userId={userId}
+                    className="z-50 fixed inset-0"
                 />
                 
                 {/* Teams Grid Section */}

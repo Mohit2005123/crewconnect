@@ -18,16 +18,16 @@ export default function EmployeeDashboard() {
   const [isJoinTeamModalOpen, setIsJoinTeamModalOpen] = useState(false);
   const [taskAssigners, setTaskAssigners] = useState({});
 
-  useEffect(() => {
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      getDoc(userRef).then((docSnap) => {
-        if (docSnap.exists() && docSnap.data().role === 'admin') {
-          router.push('/dashboard');
-        }
-      });
-    }
-  }, [user, router]);
+  // useEffect(() => {
+  //   if (user) {
+  //     const userRef = doc(db, 'users', user.uid);
+  //     getDoc(userRef).then((docSnap) => {
+  //       if (docSnap.exists() && docSnap.data().role === 'admin') {
+  //         router.push('/dashboard');
+  //       }
+  //     });
+  //   }
+  // }, [user, router]);
 
   useEffect(() => {
     const userAuth = auth.currentUser;
@@ -99,7 +99,7 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="container mx-auto p-6 bg-gray-50 rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Employee Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Assigned tasks</h1>
       <div className="mb-6">
         <button
           onClick={() => setIsJoinTeamModalOpen(true)}

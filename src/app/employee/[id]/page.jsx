@@ -7,7 +7,6 @@ import { useAuth } from '../../../components/AuthProvider'; // Add this import
 import CreateTaskModal from '../../../components/CreateTaskModal';
 import ReviewTaskModal from '../../../components/ReviewTaskModal';
 import AdminTaskInfoModal from '../../../components/AdminTaskInfoModal';
-
 export default function EmployeeTasks() {
   const router = useRouter();
   const { user } = useAuth(); // Get current user
@@ -51,7 +50,8 @@ export default function EmployeeTasks() {
     // Fetch tasks assigned to this employee
     const tasksQuery = query(
       collection(db, 'tasks'),
-      where('assignedTo', '==', employeeId)
+      where('assignedTo', '==', employeeId),
+      where('assignedBy', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(
