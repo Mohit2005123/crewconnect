@@ -51,47 +51,44 @@ export default function CreateTaskModal({
         referenceLinks: linksArray
       });
 
-      // Send email notification
-      await axios.post('/api/sendTaskMail', {
-        to: employeeEmail,
-        subject: `New Task Assigned: ${newTask.title}`,
-        message: `
-          <h2>Hello ${employeeName},</h2>
-          <p>A new task has been assigned to you:</p>
-          <h3>${newTask.title}</h3>
-          <p><strong>Description:</strong><br>${newTask.description}</p>
-          <p><strong>Deadline:</strong> ${new Date(deadline).toLocaleString()}</p>
-          ${linksArray.length > 0 ? `
-            <p><strong>Reference Links:</strong></p>
-            <ul>
-              ${linksArray.map(link => `<li><a href="${link}">${link}</a></li>`).join('')}
-            </ul>
-          ` : ''}
-          <p>Please log in to your dashboard to view the complete task details and get started.</p>
-          <p>Best regards,<br>RBNA & Associates LLP</p>
-        `
-      });
-
+      // First close the modal and reset the form
       onClose();
       setNewTask({ title: '', description: '' });
       setDeadline('');
       setReferenceLinks('');
-    } catch (error) {
-      console.error('Error creating task or sending notification:', error);
-      if (axios.isAxiosError(error)) {
-        alert(`Task created but failed to send email: ${error.response?.data?.message || error.message}`);
-      } else {
-        alert('Task created but there was an error sending the email notification.');
+
+      // Then send email notification
+      try {
+        await axios.post('/api/sendTaskMail', {
+          to: employeeEmail,
+          subject: `New Task Assigned: ${newTask.title}`,
+          message: `
+            <h2>Hello ${employeeName},</h2>
+            <p>A new task has been assigned to you:</p>
+            <h3>${newTask.title}</h3>
+            <p><strong>Description:</strong><br>${newTask.description}</p>
+            <p><strong>Deadline:</strong> ${new Date(deadline).toLocaleString()}</p>
+            ${linksArray.length > 0 ? `
+              <p><strong>Reference Links:</strong></p>
+              <ul>
+                ${linksArray.map(link => `<li><a href="${link}">${link}</a></li>`).join('')}
+              </ul>
+            ` : ''}
+            <p>Please log in to your dashboard to view the complete task details and get started.</p>
+            <p>Best regards,<br>RBNA & Associates LLP</p>
+          `
+        });
+      } catch (error) {
+        console.error('Error sending email notification:', error);
+        // Since the modal is already closed, we can show a toast notification instead
+        // You might want to implement a toast notification system
+        console.log('Task created successfully but failed to send email notification');
       }
+    } catch (error) {
+      console.error('Error creating task:', error);
+      alert('Failed to create task. Please try again.');
     } finally {
       setIsCreating(false);
-    }
-  };
-
-  // Add click outside handler
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
     }
   };
 
@@ -102,7 +99,6 @@ export default function CreateTaskModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={handleBackdropClick}
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         >
           <motion.div
@@ -110,7 +106,6 @@ export default function CreateTaskModal({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl"
-            onClick={e => e.stopPropagation()}
           >
             <h3 className="text-2xl font-bold mb-6 text-gray-800">Create New Task</h3>
             <form onSubmit={handleCreateTask} className="space-y-6">
@@ -146,7 +141,7 @@ export default function CreateTaskModal({
                     Deadline
                   </label>
                   <input
-                    type="datetime-local"
+                    type="date"
                     required
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
