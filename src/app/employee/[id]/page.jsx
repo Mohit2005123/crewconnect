@@ -85,9 +85,24 @@ export default function EmployeeTasks() {
     return () => unsubscribe();
   }, [employeeId]);
 
-  // Update computed values to move requested tasks to completed section
+  // Update computed values to move requested tasks to completed section and sort pending tasks by deadline
   const completedTasks = tasks.filter(task => task.status === 'completed' || task.status === 'requested');
-  const pendingTasks = tasks.filter(task => task.status === 'pending');
+  const pendingTasks = tasks
+    .filter(task => task.status === 'pending')
+    .sort((a, b) => {
+      console.log('Task A deadline:', a.deadline, typeof a.deadline);
+      console.log('Task B deadline:', b.deadline, typeof b.deadline);
+      
+      // Handle cases where deadline might be missing
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      
+      // Convert Firebase Timestamp to Date if necessary
+      const dateA = a.deadline?.toDate?.() || new Date(a.deadline);
+      const dateB = b.deadline?.toDate?.() || new Date(b.deadline);
+      
+      return dateA - dateB;
+    });
 
   // Helper function to get status styles
   const getStatusStyle = (status) => {
