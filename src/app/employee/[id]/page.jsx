@@ -6,6 +6,7 @@ import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../components/AuthProvider'; // Add this import
 import CreateTaskModal from '../../../components/CreateTaskModal';
 import ReviewTaskModal from '../../../components/ReviewTaskModal';
+import AdminTaskInfoModal from '../../../components/AdminTaskInfoModal';
 
 export default function EmployeeTasks() {
   const router = useRouter();
@@ -133,6 +134,14 @@ export default function EmployeeTasks() {
   };
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedInfoTask, setSelectedInfoTask] = useState(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
+  const handleInfoClick = (task, e) => {
+    e.stopPropagation(); // Prevent triggering the task click handler
+    setSelectedInfoTask(task);
+    setIsInfoModalOpen(true);
+  };
 
   // Add loading and admin check before rendering main content
   if (isLoading) {
@@ -179,17 +188,27 @@ export default function EmployeeTasks() {
                     <div
                       key={task.id}
                       onClick={() => handleTaskClick(task)}
-                      className={`bg-white border rounded-lg p-4 hover:shadow-lg transition-shadow duration-200
+                      className={`bg-white border rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 relative
                         ${task.status === 'requested' ? 'border-purple-200 cursor-pointer' : 'border-gray-200'}`}
                     >
                       <h3 className="font-semibold text-lg text-gray-800 mb-2">
                         {task.title}
                       </h3>
-                      <div className="flex items-center mt-3">
-                        <span className="text-sm text-gray-600 font-medium">Status:</span>
-                        <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
-                          {task.status === 'requested' ? 'Requested ⏳' : task.status}
-                        </span>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center">
+                          <span className="text-sm text-gray-600 font-medium">Status:</span>
+                          <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                            {task.status === 'requested' ? 'Requested ⏳' : task.status}
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => handleInfoClick(task, e)}
+                          className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -213,11 +232,21 @@ export default function EmployeeTasks() {
                       <h3 className="font-semibold text-lg text-gray-800 mb-2">
                         {task.title}
                       </h3>
-                      <div className="flex items-center mt-3">
-                        <span className="text-sm text-gray-600 font-medium">Status:</span>
-                        <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
-                          {task.status}
-                        </span>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center">
+                          <span className="text-sm text-gray-600 font-medium">Status:</span>
+                          <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                            {task.status}
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => handleInfoClick(task, e)}
+                          className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -244,6 +273,15 @@ export default function EmployeeTasks() {
         onClose={() => setIsCreateModalOpen(false)}
         employeeId={employeeId}
         currentUser={user}
+      />
+
+      <AdminTaskInfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => {
+          setIsInfoModalOpen(false);
+          setSelectedInfoTask(null);
+        }}
+        task={selectedInfoTask}
       />
     </div>
   );
