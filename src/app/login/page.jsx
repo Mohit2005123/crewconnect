@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { Checkbox } from '@nextui-org/checkbox';
 import Link from 'next/link';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
@@ -54,6 +54,21 @@ export default function Login() {
     } catch (error) {
       console.log('Error in Google login', error);
       setError("Something went wrong with Google login, please try again");
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setError('Password reset email sent! Please check your inbox.');
+    } catch (error) {
+      console.log('Error in password reset', error);
+      setError('Error sending password reset email. Please try again.');
     }
   };
 
@@ -109,7 +124,7 @@ export default function Login() {
                 value={password}
                 onChange={(e)=>setPassword(e.target.value)}
               />
-              <div className="flex items-center mt-2">
+              <div className="flex items-center justify-between mt-2">
                 <Checkbox
                   id="showPassword"
                   isSelected={showPassword}
@@ -118,6 +133,12 @@ export default function Login() {
                 >
                   <span className="text-sm text-gray-600">Show password</span>
                 </Checkbox>
+                <button 
+                  onClick={handleForgotPassword}
+                  className="text-sm text-gray-600 hover:text-gray-800 underline"
+                >
+                  Forgot Password?
+                </button>
               </div>
             </div>
 
