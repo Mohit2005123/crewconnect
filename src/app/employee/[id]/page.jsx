@@ -50,8 +50,7 @@ export default function EmployeeTasks() {
     // Fetch tasks assigned to this employee
     const tasksQuery = query(
       collection(db, 'tasks'),
-      where('assignedTo', '==', employeeId),
-      where('assignedBy', '==', user.uid)
+      where('assignedTo', '==', employeeId)
     );
 
     const unsubscribe = onSnapshot(
@@ -85,22 +84,28 @@ export default function EmployeeTasks() {
     return () => unsubscribe();
   }, [employeeId]);
 
-  // Update computed values to move requested tasks to completed section and sort pending tasks by deadline
-  const completedTasks = tasks.filter(task => task.status === 'completed' || task.status === 'requested');
-  const pendingTasks = tasks
-    .filter(task => task.status === 'pending')
+  // Separate tasks by assignedBy
+  const tasksAssignedByMe = tasks.filter(task => task.assignedBy === user.uid);
+  const tasksAssignedByOthers = tasks.filter(task => task.assignedBy !== user.uid);
+
+  // Further separate each category into completed and pending
+  const myCompletedTasks = tasksAssignedByMe.filter(task => task.status === 'completed' || task.status === 'requested');
+  const myPendingTasks = tasksAssignedByMe.filter(task => task.status === 'pending')
     .sort((a, b) => {
-      console.log('Task A deadline:', a.deadline, typeof a.deadline);
-      console.log('Task B deadline:', b.deadline, typeof b.deadline);
-      
-      // Handle cases where deadline might be missing
       if (!a.deadline) return 1;
       if (!b.deadline) return -1;
-      
-      // Convert Firebase Timestamp to Date if necessary
       const dateA = a.deadline?.toDate?.() || new Date(a.deadline);
       const dateB = b.deadline?.toDate?.() || new Date(b.deadline);
-      
+      return dateA - dateB;
+    });
+
+  const othersCompletedTasks = tasksAssignedByOthers.filter(task => task.status === 'completed' || task.status === 'requested');
+  const othersPendingTasks = tasksAssignedByOthers.filter(task => task.status === 'pending')
+    .sort((a, b) => {
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      const dateA = a.deadline?.toDate?.() || new Date(a.deadline);
+      const dateB = b.deadline?.toDate?.() || new Date(b.deadline);
       return dateA - dateB;
     });
 
@@ -119,7 +124,7 @@ export default function EmployeeTasks() {
   };
 
   const handleTaskClick = (task) => {
-    if (task.status === 'requested') {
+    if (task.status === 'requested' && task.assignedBy === user.uid) {
       setSelectedTask(task);
       setIsModalOpen(true);
     }
@@ -204,90 +209,209 @@ export default function EmployeeTasks() {
             </div>
           ) : (
             <div className="space-y-8">
-              {/* Completed Tasks Section */}
-              <div>
-                <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                  Completed Tasks ({completedTasks.length})
-                </h2>
-                <div className="space-y-2">
-                  {completedTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={() => handleTaskClick(task)}
-                      className={`bg-white border rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 relative flex justify-between items-center
-                        ${task.status === 'requested' ? 'border-purple-200 cursor-pointer' : 'border-gray-200'}`}
-                    >
-                      <h3 className="font-semibold text-gray-800">{task.title}</h3>
-                      <div className="flex items-center gap-4">
-                        {task.deadline && (
-                          <span className="text-sm text-gray-600">
-                            Due: {task.deadline?.toDate?.().toLocaleDateString() || new Date(task.deadline).toLocaleDateString()}
+              {/* Tasks Assigned By Me */}
+              <div className="border-b pb-8">
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Tasks Assigned By Me</h2>
+                
+                {/* Completed Tasks Section */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-700 mb-4">
+                    Completed Tasks ({myCompletedTasks.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {myCompletedTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        onClick={() => handleTaskClick(task)}
+                        className={`bg-white border rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 relative flex justify-between items-center
+                          ${task.status === 'requested' ? 'border-purple-200 cursor-pointer' : 'border-gray-200'}`}
+                      >
+                        <h3 className="font-semibold text-gray-800">{task.title}</h3>
+                        <div className="flex items-center gap-4">
+                          {task.deadline && (
+                            <span className="text-sm text-gray-600">
+                              Due: {task.deadline?.toDate?.().toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              }) || new Date(task.deadline).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          )}
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                            {task.status === 'requested' ? 'Requested ⏳' : task.status}
                           </span>
-                        )}
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
-                          {task.status === 'requested' ? 'Requested ⏳' : task.status}
-                        </span>
-                        <button
-                          onClick={(e) => handleInfoClick(task, e)}
-                          className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                          </svg>
-                        </button>
+                          <button
+                            onClick={(e) => handleInfoClick(task, e)}
+                            className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                    {myCompletedTasks.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No completed tasks</p>
+                    )}
+                  </div>
                 </div>
-                {completedTasks.length === 0 && (
-                  <p className="text-gray-500 text-center py-4">No completed tasks</p>
-                )}
+
+                {/* Pending Tasks Section */}
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-4">
+                    Pending Tasks ({myPendingTasks.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {myPendingTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 flex justify-between items-center"
+                      >
+                        <h3 className="font-semibold text-gray-800">{task.title}</h3>
+                        <div className="flex items-center gap-4">
+                          {task.deadline && (
+                            <span className="text-sm text-gray-600">
+                              Due: {task.deadline?.toDate?.().toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              }) || new Date(task.deadline).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          )}
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                            {task.status}
+                          </span>
+                          <button
+                            onClick={(e) => handleInfoClick(task, e)}
+                            className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteTask(task.id, e)}
+                            className="p-2 text-red-500 hover:text-red-600 rounded-full hover:bg-red-50"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {myPendingTasks.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No pending tasks</p>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Pending Tasks Section */}
+              {/* Tasks Assigned By Others */}
               <div>
-                <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                  Pending Tasks ({pendingTasks.length})
-                </h2>
-                <div className="space-y-2">
-                  {pendingTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 flex justify-between items-center"
-                    >
-                      <h3 className="font-semibold text-gray-800">{task.title}</h3>
-                      <div className="flex items-center gap-4">
-                        {task.deadline && (
-                          <span className="text-sm text-gray-600">
-                            Due: {task.deadline?.toDate?.().toLocaleDateString() || new Date(task.deadline).toLocaleDateString()}
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">Tasks Assigned By Others</h2>
+                
+                {/* Completed Tasks Section */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-700 mb-4">
+                    Completed Tasks ({othersCompletedTasks.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {othersCompletedTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className={`bg-white border rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 relative flex justify-between items-center
+                          ${task.status === 'requested' ? 'border-purple-200' : 'border-gray-200'}`}
+                      >
+                        <h3 className="font-semibold text-gray-800">{task.title}</h3>
+                        <div className="flex items-center gap-4">
+                          {task.deadline && (
+                            <span className="text-sm text-gray-600">
+                              Due: {task.deadline?.toDate?.().toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              }) || new Date(task.deadline).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          )}
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                            {task.status === 'requested' ? 'Requested ⏳' : task.status}
                           </span>
-                        )}
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
-                          {task.status}
-                        </span>
-                        <button
-                          onClick={(e) => handleInfoClick(task, e)}
-                          className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteTask(task.id, e)}
-                          className="p-2 text-red-500 hover:text-red-600 rounded-full hover:bg-red-50"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                        </button>
+                          <button
+                            onClick={(e) => handleInfoClick(task, e)}
+                            className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                    {othersCompletedTasks.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No completed tasks</p>
+                    )}
+                  </div>
                 </div>
-                {pendingTasks.length === 0 && (
-                  <p className="text-gray-500 text-center py-4">No pending tasks</p>
-                )}
+
+                {/* Pending Tasks Section for Tasks Assigned By Others */}
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-4">
+                    Pending Tasks ({othersPendingTasks.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {othersPendingTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 flex justify-between items-center"
+                      >
+                        <h3 className="font-semibold text-gray-800">{task.title}</h3>
+                        <div className="flex items-center gap-4">
+                          {task.deadline && (
+                            <span className="text-sm text-gray-600">
+                              Due: {task.deadline?.toDate?.().toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              }) || new Date(task.deadline).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                              })}
+                            </span>
+                          )}
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
+                            {task.status}
+                          </span>
+                          <button
+                            onClick={(e) => handleInfoClick(task, e)}
+                            className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {othersPendingTasks.length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No pending tasks</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
