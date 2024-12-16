@@ -22,9 +22,14 @@ export default function EmployeeDashboard() {
 
   // Function to convert Firestore Timestamp to Date
   const convertTimestampToDate = (timestamp) => {
-    return timestamp instanceof Timestamp 
+    if (!timestamp) return null;
+    const date = timestamp instanceof Timestamp 
       ? timestamp.toDate() 
-      : (timestamp ? new Date(timestamp) : null);
+      : new Date(timestamp);
+    
+    // Set the time to 5:30 PM
+    date.setHours(17, 30, 0, 0);
+    return date;
   };
 
   // Function to sort tasks by deadline
@@ -47,6 +52,11 @@ export default function EmployeeDashboard() {
     const parsedDeadline = convertTimestampToDate(deadline);
     if (!parsedDeadline) return false;
     return parsedDeadline < new Date();
+  };
+
+  const formatDateTime = (date) => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-GB') + ' 5:30 PM';
   };
 
   useEffect(() => {
@@ -186,7 +196,7 @@ export default function EmployeeDashboard() {
                         ${isTaskOverdue(task.deadline) && task.status !== 'requested'
                           ? 'text-red-600' 
                           : 'text-gray-600'}`}>
-                        <strong>Deadline:</strong> {deadline.toLocaleString()}
+                        <strong>Deadline:</strong> {formatDateTime(deadline)}
                       </p>
                     )}
                   </div>

@@ -13,9 +13,21 @@ export default function EmployeeTasks() {
   const { user } = useAuth(); // Get current user
   const params = useParams();
   
-  // Add loading state
+  // Group all useState declarations together at the top
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [tasks, setTasks] = useState([]);
+  const [employeeName, setEmployeeName] = useState('');
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedInfoTask, setSelectedInfoTask] = useState(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isEditingDeadline, setIsEditingDeadline] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
+  const employeeId = params?.id;
 
   // Move auth check to separate useEffect
   useEffect(() => {
@@ -37,13 +49,6 @@ export default function EmployeeTasks() {
     
     checkAuth();
   }, [user, router]);
-
-  const [tasks, setTasks] = useState([]);
-  const [employeeName, setEmployeeName] = useState('');
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const employeeId = params?.id; // Adjust for your specific param key (e.g., 'id')
 
   useEffect(() => {
     if (!employeeId) return;
@@ -154,10 +159,6 @@ export default function EmployeeTasks() {
     }
   };
 
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedInfoTask, setSelectedInfoTask] = useState(null);
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-
   const handleInfoClick = (task, e) => {
     e.stopPropagation(); // Prevent triggering the task click handler
     setSelectedInfoTask(task);
@@ -187,6 +188,20 @@ export default function EmployeeTasks() {
   if (!isAdmin) {
     return null; // Return nothing while redirecting
   }
+
+  // Add this function with your other handlers
+  const handleDeadlineUpdate = async (taskId, newDeadline) => {
+    try {
+      const taskRef = doc(db, 'tasks', taskId);
+      await updateDoc(taskRef, {
+        deadline: newDeadline
+      });
+      setEditingTaskId(null);
+      setIsEditingDeadline(false);
+    } catch (error) {
+      console.error('Error updating deadline:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -277,17 +292,48 @@ export default function EmployeeTasks() {
                         <h3 className="font-semibold text-gray-800">{task.title}</h3>
                         <div className="flex items-center gap-4">
                           {task.deadline && (
-                            <span className="text-sm text-gray-600">
-                              Due: {task.deadline?.toDate?.().toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              }) || new Date(task.deadline).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric'
-                              })}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-gray-600">
+                                {editingTaskId === task.id ? (
+                                  <input
+                                    type="date"
+                                    defaultValue={task.deadline?.toDate?.().toISOString().split('T')[0] || 
+                                               new Date(task.deadline).toISOString().split('T')[0]}
+                                    onChange={(e) => {
+                                      const newDate = new Date(e.target.value);
+                                      handleDeadlineUpdate(task.id, newDate);
+                                    }}
+                                    className="border rounded px-2 py-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <span>
+                                      Due: {task.deadline?.toDate?.().toLocaleDateString('en-GB', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric'
+                                      }) || new Date(task.deadline).toLocaleDateString('en-GB', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric'
+                                      })}
+                                    </span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingTaskId(task.id);
+                                      }}
+                                      className="p-1 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                )}
+                              </span>
+                            </div>
                           )}
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
                             {task.status}
