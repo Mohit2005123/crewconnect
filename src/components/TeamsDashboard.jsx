@@ -18,14 +18,31 @@ function TeamsDashboard() {
     const [userName, setUserName]= useState('');
     useEffect(() => {
         const auth = getAuth();
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 setUserId(user.uid);
                 fetchUserTeams(user.uid);
-                setUserName(user.displayName);
+                
+                // First try to get displayName
+                if (user.displayName) {
+                    setUserName(user.displayName);
+                } else {
+                    // If no displayName, fetch from users collection
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
+                        if (userDoc.exists()) {
+                            const userData = userDoc.data();
+                            setUserName(userData.name || userData.username || 'User'); // fallback to 'User' if no name found
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user data:', error);
+                        setUserName('User'); // fallback to 'User' if error occurs
+                    }
+                }
             } else {
                 setUserId(null);
                 setTeams([]);
+                setUserName('');
             }
         });
 

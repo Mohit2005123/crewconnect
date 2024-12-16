@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useAuth } from '../components/AuthProvider';
 import { useRouter } from 'next/navigation';
@@ -17,30 +17,78 @@ export default function EmployeeDashboard() {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [isJoinTeamModalOpen, setIsJoinTeamModalOpen] = useState(false);
   const [taskAssigners, setTaskAssigners] = useState({});
+  const [userName, setUserName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // useEffect(() => {
-  //   if (user) {
-  //     const userRef = doc(db, 'users', user.uid);
-  //     getDoc(userRef).then((docSnap) => {
-  //       if (docSnap.exists() && docSnap.data().role === 'admin') {
-  //         router.push('/dashboard');
-  //       }
-  //     });
-  //   }
-  // }, [user, router]);
+  // Function to convert Firestore Timestamp to Date
+  const convertTimestampToDate = (timestamp) => {
+    return timestamp instanceof Timestamp 
+      ? timestamp.toDate() 
+      : (timestamp ? new Date(timestamp) : null);
+  };
+
+  // Function to sort tasks by deadline
+  const sortTasksByDeadline = (tasksToSort) => {
+    return tasksToSort.sort((a, b) => {
+      const deadlineA = convertTimestampToDate(a.deadline);
+      const deadlineB = convertTimestampToDate(b.deadline);
+
+      // If no deadline, put those tasks at the end
+      if (!deadlineA) return 1;
+      if (!deadlineB) return -1;
+      
+      // Compare dates
+      return deadlineA.getTime() - deadlineB.getTime();
+    });
+  };
+
+  // Function to check if a task is overdue
+  const isTaskOverdue = (deadline) => {
+    const parsedDeadline = convertTimestampToDate(deadline);
+    if (!parsedDeadline) return false;
+    return parsedDeadline < new Date();
+  };
 
   useEffect(() => {
     const userAuth = auth.currentUser;
+    
+    // Function to fetch user name from database
+    const fetchUserName = async (uid) => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        if (userDoc.exists()) {
+          setUserName(userDoc.data().name || userDoc.data().email);
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching user name:', error);
+        setIsLoading(false);
+      }
+    };
+
     if (userAuth) {
+      // First try to get the display name from auth
+      if (userAuth.displayName) {
+        setUserName(userAuth.displayName);
+        setIsLoading(false);
+      } else {
+        // If no display name, fetch from database
+        fetchUserName(userAuth.uid);
+      }
+      
+      // Set up tasks listener
       try {
         const q = query(collection(db, 'tasks'), where('assignedTo', '==', userAuth.uid));
         const unsubscribe = onSnapshot(q, async (querySnapshot) => {
           const tasksList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setTasks(tasksList);
           
-          // Fetch assigner details for each task
+          // Sort tasks by deadline
+          const sortedTasks = sortTasksByDeadline(tasksList);
+          
+          setTasks(sortedTasks);
+          
           const assignersData = {};
-          for (const task of tasksList) {
+          for (const task of sortedTasks) {
             if (task.assignedBy && !taskAssigners[task.assignedBy]) {
               const assignerDoc = await getDoc(doc(db, 'users', task.assignedBy));
               if (assignerDoc.exists()) {
@@ -49,9 +97,6 @@ export default function EmployeeDashboard() {
             }
           }
           setTaskAssigners(prev => ({ ...prev, ...assignersData }));
-        }, (error) => {
-          console.error('Error fetching tasks:', error);
-          setError('Error loading task data. Please try again later.');
         });
 
         return () => unsubscribe();
@@ -98,8 +143,16 @@ export default function EmployeeDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 bg-gray-50 rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Assigned tasks</h1>
+    <div className="container mx-auto p-6 bg-gray-50 rounded-lg shadow-lg mt-20">
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+        {isLoading ? (
+          <div className="animate-pulse h-8 w-48 bg-gray-200 rounded mx-auto"></div>
+        ) : userName ? (
+          `${userName}'s Tasks`
+        ) : (
+          'Your Tasks'
+        )}
+      </h1>
       <div className="mb-6">
         <button
           onClick={() => setIsJoinTeamModalOpen(true)}
@@ -114,34 +167,51 @@ export default function EmployeeDashboard() {
           <p className="text-gray-600">No tasks assigned yet.</p>
         ) : (
           <ul className="space-y-4">
-            {tasks.map((task) => (
-              <li key={task.id} className="border p-4 rounded-lg flex justify-between items-center bg-white shadow-sm hover:shadow-md transition-shadow">
-                <div>
-                  <p className="text-lg font-medium text-gray-800"><strong>Title:</strong> {task.title}</p>
-                  <p className="text-sm text-gray-600"><strong>Status:</strong> {task.status}</p>
-                  <p className="text-sm text-gray-600"><strong>Assigned by:</strong> {taskAssigners[task.assignedBy] || 'Loading...'}</p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setSelectedTask(task);
-                      setIsInfoModalOpen(true);
-                    }}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow"
-                  >
-                    Info
-                  </button>
-                  {task.status === 'pending' && (
+            {tasks.map((task) => {
+              const deadline = convertTimestampToDate(task.deadline);
+              return (
+                <li 
+                  key={task.id} 
+                  className={`border p-4 rounded-lg flex justify-between items-center shadow-sm hover:shadow-md transition-shadow 
+                    ${isTaskOverdue(task.deadline) && task.status !== 'requested' 
+                      ? 'bg-red-50 border-red-200' 
+                      : 'bg-white'}`}
+                >
+                  <div>
+                    <p className="text-lg font-medium text-gray-800"><strong>Title:</strong> {task.title}</p>
+                    <p className="text-sm text-gray-600"><strong>Status:</strong> {task.status}</p>
+                    <p className="text-sm text-gray-600"><strong>Assigned by:</strong> {taskAssigners[task.assignedBy] || 'Loading...'}</p>
+                    {deadline && (
+                      <p className={`text-sm font-medium 
+                        ${isTaskOverdue(task.deadline) && task.status !== 'requested'
+                          ? 'text-red-600' 
+                          : 'text-gray-600'}`}>
+                        <strong>Deadline:</strong> {deadline.toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-3">
                     <button
-                      onClick={() => handleCompleteTask(task.id, task.title)}
-                      className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors shadow"
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setIsInfoModalOpen(true);
+                      }}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow"
                     >
-                      Mark as Complete
+                      Info
                     </button>
-                  )}
-                </div>
-              </li>
-            ))}
+                    {task.status === 'pending' && (
+                      <button
+                        onClick={() => handleCompleteTask(task.id, task.title)}
+                        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors shadow"
+                      >
+                        Mark as Complete
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -157,7 +227,7 @@ export default function EmployeeDashboard() {
         onComplete={handleCompleteTask}
       />
 
-      {/* Replace the old modal with the new component */}
+      {/* Join Team Modal */}
       <JoinTeamModal 
         isOpen={isJoinTeamModalOpen}
         onClose={() => setIsJoinTeamModalOpen(false)}

@@ -7,6 +7,7 @@ import { useAuth } from '../../../components/AuthProvider'; // Add this import
 import CreateTaskModal from '../../../components/CreateTaskModal';
 import ReviewTaskModal from '../../../components/ReviewTaskModal';
 import AdminTaskInfoModal from '../../../components/AdminTaskInfoModal';
+import Navbar from '../../../components/Navbar';
 export default function EmployeeTasks() {
   const router = useRouter();
   const { user } = useAuth(); // Get current user
@@ -189,6 +190,7 @@ export default function EmployeeTasks() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navbar />
       <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -377,6 +379,7 @@ export default function EmployeeTasks() {
                       <div
                         key={task.id}
                         className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg transition-shadow duration-200 flex justify-between items-center"
+                        
                       >
                         <h3 className="font-semibold text-gray-800">{task.title}</h3>
                         <div className="flex items-center gap-4">
