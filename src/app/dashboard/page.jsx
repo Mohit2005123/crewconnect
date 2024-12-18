@@ -20,7 +20,7 @@ export default function Dashboard() {
       router.push('/login');
     }
   }, [user, loading, router]);
-
+  
   useEffect(() => {
     if (user) {
       const fetchUserRole = async () => {
@@ -43,20 +43,35 @@ export default function Dashboard() {
   }, [user]);
 
   if (loading || !user) {
-    return <div>Loading...</div>;
+    return (
+      <div className="bg-white text-black">
+        <Navbar />
+        <div>Loading...</div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-red-500">{error}</div>;
+    return (
+      <div className="bg-white text-black">
+        <Navbar />
+        <div className="text-red-500">{error}</div>
+      </div>
+    );
   }
 
   if (!userRole) {
-    return <div>Loading user role...</div>;
+    return (
+      <div className="bg-white text-black">
+        <Navbar />
+        <div>Loading user role...</div>
+      </div>
+    );
   }
 
   return (
     <div className="bg-white text-black">
-      <Navbar></Navbar>
+      <Navbar />
       {userRole === 'admin' ? <TeamsDashboard /> : <EmployeeDashboard />}
     </div>
   );
