@@ -20,6 +20,8 @@ const Navbar = () => {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      // Clear user information from local storage or session storage
+      localStorage.clear(); // or sessionStorage.clear();
       router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
