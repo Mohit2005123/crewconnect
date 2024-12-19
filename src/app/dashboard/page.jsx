@@ -25,6 +25,7 @@ export default function Dashboard() {
     if (user) {
       const fetchUserRole = async () => {
         try {
+          console.log(user.uid);
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             setUserRole(userDoc.data().role);
