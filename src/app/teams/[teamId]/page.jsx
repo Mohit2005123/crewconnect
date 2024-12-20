@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc, updateDoc, arrayRemove, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import Navbar from '../../../components/Navbar';
 
@@ -49,6 +49,34 @@ export default function TeamPage() {
     router.push(`/employee/${employeeId}`);
   };
 
+  const handleRemoveEmployee = async (employeeId, e) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to remove this employee from the team? All tasks assigned to this employee will also be deleted.')) {
+      return;
+    }
+
+    try {
+      // First, get and delete all tasks assigned to this employee
+      const tasksRef = collection(db, 'tasks');
+      const tasksQuery = query(tasksRef, where('assignedTo', '==', employeeId));
+      const taskSnapshot = await getDocs(tasksQuery);
+      
+      // Delete each task
+      const deletePromises = taskSnapshot.docs.map(taskDoc => 
+        deleteDoc(doc(db, 'tasks', taskDoc.id))
+      );
+      await Promise.all(deletePromises);
+      // Then remove employee from team
+      const teamDocRef = doc(db, 'teams', teamId);
+      await updateDoc(teamDocRef, {
+        employees: arrayRemove(employeeId)
+      });
+    } catch (error) {
+      console.error('Error removing employee and tasks:', error);
+      alert('Failed to remove employee and associated tasks');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -68,9 +96,17 @@ export default function TeamPage() {
                 {employees.map((employee) => (
                   <div
                     key={employee.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200 cursor-pointer relative"
                     onClick={() => handleEmployeeClick(employee.id)}
                   >
+                    <button
+                      onClick={(e) => handleRemoveEmployee(employee.id, e)}
+                      className="absolute top-1/2 right-2 -translate-y-1/2 p-1 text-red-600 hover:text-red-800 rounded-full hover:bg-red-100"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
                     <h3 className="font-semibold text-lg text-gray-800 mb-2">
                       {employee.name}
                     </h3>
