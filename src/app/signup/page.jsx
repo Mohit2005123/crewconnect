@@ -16,10 +16,12 @@ export default function SignUp() {
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(false); // Add loading state
   const router = useRouter();
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true); // Set loading to true
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
@@ -53,6 +55,8 @@ export default function SignUp() {
     } catch (error) {
       console.error('Error in signup:', error);
       setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false); // Set loading to false
     }
   };
   
@@ -188,14 +192,16 @@ export default function SignUp() {
               type="submit"
               className="w-full bg-black text-[#FFFFFF] py-3 rounded-3xl hover:bg-gray-800 transition font-sans"
               onClick={handleSignup}
+              disabled={loading} // Disable button when loading
             >
-              Sign Up
+              {loading ? "Signing Up..." : "Sign Up"} {/* Show loader text */}
             </button>
 
             <button
               type="button"
               className="w-full bg-white text-black border border-gray-300 py-3 rounded-3xl hover:bg-gray-100 transition font-sans flex items-center justify-center mt-4"
               onClick={handleGoogleSignIn}
+              disabled={loading} // Disable button when loading
             >
               <Image
                 src="/signup/google-icon.svg"

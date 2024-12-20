@@ -14,10 +14,13 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
   const handleLogin=async(e)=>{
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     try{
         await signInWithEmailAndPassword(auth, email, password);
         router.push("/dashboard");
@@ -29,10 +32,13 @@ export default function Login() {
         else{
             setError("Something went wrong please try again");
         }
+    } finally {
+      setIsLoading(false);
     }
   }
 
   const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -54,6 +60,8 @@ export default function Login() {
     } catch (error) {
       console.log('Error in Google login', error);
       setError("Something went wrong with Google login, please try again");
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -144,24 +152,42 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full bg-black text-[#FFFFFF] py-3 rounded-3xl hover:bg-gray-800 transition font-sans"
+              className="w-full bg-black text-[#FFFFFF] py-3 rounded-3xl hover:bg-gray-800 transition font-sans relative"
+              disabled={isLoading}
             >
-              Log In
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-t-2 border-white border-solid rounded-full animate-spin"></div>
+                  <span className="ml-2">Logging in...</span>
+                </div>
+              ) : (
+                'Log In'
+              )}
             </button>
 
             <button
               type="button"
               className="w-full bg-white text-black border border-gray-300 py-3 rounded-3xl hover:bg-gray-100 transition font-sans flex items-center justify-center mt-4"
               onClick={handleGoogleLogin}
+              disabled={isGoogleLoading}
             >
-              <Image
-                src="/signup/google-icon.svg"
-                alt="Google icon"
-                width={20}
-                height={20}
-                className="mr-2"
-              />
-              Continue with Google
+              {isGoogleLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-t-2 border-black border-solid rounded-full animate-spin"></div>
+                  <span className="ml-2">Connecting...</span>
+                </div>
+              ) : (
+                <>
+                  <Image
+                    src="/signup/google-icon.svg"
+                    alt="Google icon"
+                    width={20}
+                    height={20}
+                    className="mr-2"
+                  />
+                  Continue with Google
+                </>
+              )}
             </button>
           </form>
           <p className="mt-4 text-gray-500 text-center">
