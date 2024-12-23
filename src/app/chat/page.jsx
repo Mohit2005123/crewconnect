@@ -15,6 +15,7 @@ export default function AdminChat() {
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatWidth, setChatWidth] = useState(320); // Add this state
 
   useEffect(() => {
     if (!user) {
@@ -86,7 +87,13 @@ export default function AdminChat() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex">
-        <div className={`transition-all duration-300 ease-in-out w-full ${isChatOpen ? 'mr-80' : ''}`}>
+        <div 
+          className="transition-all duration-0 ease-in-out w-full"
+          style={{ 
+            width: isChatOpen ? `calc(100% - ${chatWidth}px)` : '100%',
+            marginRight: isChatOpen ? `${chatWidth}px` : '0'
+          }}
+        >
           <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h1 className="text-2xl font-bold text-gray-800 mb-6">Chat with Admins</h1>
@@ -105,9 +112,9 @@ export default function AdminChat() {
                           </span>
                         </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">{admin.name}</h3>
-                        <p className="text-sm text-gray-500">{admin.email}</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-800 truncate">{admin.name}</h3>
+                        <p className="text-sm text-gray-500 truncate">{admin.email}</p>
                       </div>
                     </div>
                   </div>
@@ -128,7 +135,9 @@ export default function AdminChat() {
             messages={messages}
             onSendMessage={handleSendMessage}
             employeeName={selectedAdmin.name}
-            user={user}  // Add this line
+            user={user}
+            width={chatWidth}
+            onWidthChange={setChatWidth}
           />
         )}
       </div>

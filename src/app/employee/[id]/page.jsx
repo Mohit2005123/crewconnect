@@ -33,6 +33,7 @@ export default function EmployeeTasks() {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [chatWidth, setChatWidth] = useState(320); // Add this state
 
   // Move auth check to separate useEffect
   useEffect(() => {
@@ -243,7 +244,13 @@ export default function EmployeeTasks() {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="flex">
-        <div className={`transition-all duration-300 ease-in-out w-full ${isChatOpen ? 'mr-80' : ''}`}>
+        <div 
+          className="transition-all duration-0 ease-in-out w-full"
+          style={{ 
+            width: isChatOpen ? `calc(100% - ${chatWidth}px)` : '100%',
+            marginRight: isChatOpen ? `${chatWidth}px` : '0'
+          }}
+        >
           <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -435,6 +442,7 @@ export default function EmployeeTasks() {
                               )}
                               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
                                 {task.status === 'requested' ? 'Requested ⏳' : task.status}
+
                               </span>
                               <button
                                 onClick={(e) => handleInfoClick(task, e)}
@@ -524,6 +532,8 @@ export default function EmployeeTasks() {
           onSendMessage={handleSendMessage}
           employeeName={employeeName}
           user={user}
+          width={chatWidth}
+          onWidthChange={setChatWidth}
         />
       </div>
 
@@ -553,4 +563,5 @@ export default function EmployeeTasks() {
     </div>
   );
 }
+
 
