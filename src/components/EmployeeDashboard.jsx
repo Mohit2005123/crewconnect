@@ -170,6 +170,12 @@ export default function EmployeeDashboard() {
         >
           Join Team
         </button>
+        <button
+          onClick={() => router.push('/chat')}
+          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow ml-4"
+        >
+          Chat with Admins
+        </button>
       </div>
       <div>
         <h2 className="text-2xl font-semibold mb-4 text-gray-700">Your Tasks</h2>

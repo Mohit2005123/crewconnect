@@ -13,6 +13,12 @@ export default function ChatBox({ isOpen, onClose, messages, onSendMessage, empl
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [isOpen]);
   
 
   useEffect(() => {

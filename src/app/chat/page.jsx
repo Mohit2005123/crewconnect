@@ -7,6 +7,7 @@ import { db, database } from '../../lib/firebase';
 import { useAuth } from '../../components/AuthProvider';
 import Navbar from '../../components/Navbar';
 import ChatBox from '../../components/ChatBox';
+import './loader.css'; // Add this import for custom CSS loader
 
 export default function AdminChat() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function AdminChat() {
   const [messages, setMessages] = useState([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatWidth, setChatWidth] = useState(320); // Add this state
+  const [isLoading, setIsLoading] = useState(true); // Add this state
+  
 
   useEffect(() => {
     if (!user) {
@@ -37,8 +40,11 @@ export default function AdminChat() {
           ...doc.data()
         }));
         setAdmins(adminsList);
+        setIsLoading(false); // Set loading to false after fetching
       } catch (error) {
         console.error('Error fetching admins:', error);
+        setIsLoading(false); // Set loading to false even if there's an error
+  
       }
     };
 
@@ -97,29 +103,35 @@ export default function AdminChat() {
           <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h1 className="text-2xl font-bold text-gray-800 mb-6">Chat with Admins</h1>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {admins.map((admin) => (
-                  <div
-                    key={admin.id}
-                    onClick={() => handleAdminSelect(admin)}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white font-semibold">
-                            {admin.name?.charAt(0)?.toUpperCase() || 'A'}
-                          </span>
+              {isLoading ? ( // Show loader if loading
+                <div className="flex justify-center items-center h-64">
+                  <div className="loader"></div> {/* Custom CSS loader */}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {admins.map((admin) => (
+                    <div
+                      key={admin.id}
+                      onClick={() => handleAdminSelect(admin)}
+                      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-white font-semibold">
+                              {admin.name?.charAt(0)?.toUpperCase() || 'A'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-800 truncate">{admin.name}</h3>
+                          <p className="text-sm text-gray-500 truncate">{admin.email}</p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-800 truncate">{admin.name}</h3>
-                        <p className="text-sm text-gray-500 truncate">{admin.email}</p>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
