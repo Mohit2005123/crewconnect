@@ -236,7 +236,8 @@ export default function EmployeeTasks() {
       text,
       timestamp: serverTimestamp(),
       isAdmin: true,
-      senderId: user.uid
+      senderId: user.uid,
+      read:false
     });
   };
 
