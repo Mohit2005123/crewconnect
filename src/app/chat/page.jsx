@@ -18,7 +18,7 @@ export default function AdminChat() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatWidth, setChatWidth] = useState(320); // Add this state
   const [isLoading, setIsLoading] = useState(true); // Add this state
-  
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   useEffect(() => {
     if (!user) {
@@ -42,7 +42,23 @@ export default function AdminChat() {
         setAdmins(adminsList);
         setIsLoading(false); // Set loading to false after fetching
 
-        // Remove unread messages count fetching
+        // Fetch unread messages for each admin
+        adminsList.forEach(admin => {
+          const chatRef = ref(database, `chats/${admin.id}_${user.uid}`);
+          onValue(chatRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+              const unreadCount = Object.values(data).filter(
+                msg => msg.isAdmin && !msg.readbyEmployee
+              ).length;
+              setUnreadCounts(prev => ({
+                ...prev,
+                [admin.id]: unreadCount
+              }));
+            }
+          });
+        });
+
       } catch (error) {
         console.error('Error fetching admins:', error);
         setIsLoading(false); // Set loading to false even if there's an error
@@ -73,9 +89,29 @@ export default function AdminChat() {
     return () => unsubscribe();
   }, [selectedAdmin, user]);
 
-  const handleAdminSelect = (admin) => {
+  const handleAdminSelect = async (admin) => {
     setSelectedAdmin(admin);
     setIsChatOpen(true);
+
+    // Mark messages as read
+    const chatRef = ref(database, `chats/${admin.id}_${user.uid}`);
+    onValue(chatRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Update all messages where isAdmin is true to be marked as read
+        Object.entries(data).forEach(([messageId, message]) => {
+          if (message.isAdmin && !message.readbyEmployee) {
+            const messageRef = ref(database, `chats/${admin.id}_${user.uid}/${messageId}`);
+            update(messageRef, {
+              readbyEmployee: true
+            });
+          }
+        });
+      }
+    }, {
+      // This ensures the listener is called only once
+      onlyOnce: true
+    });
   };
 
   const handleSendMessage = (text) => {
@@ -86,7 +122,9 @@ export default function AdminChat() {
       text,
       timestamp: serverTimestamp(),
       isAdmin: false,
-      senderId: user.uid
+      senderId: user.uid,
+      readbyAdmin: false ,
+      readbyEmployee:true
     });
   };
 
@@ -127,7 +165,11 @@ export default function AdminChat() {
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-gray-800 truncate">{admin.name}</h3>
                           <p className="text-sm text-gray-500 truncate">{admin.email}</p>
-                          {/* Remove unread messages display */}
+                          {unreadCounts[admin.id] > 0 && (
+                            <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                              {unreadCounts[admin.id]}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

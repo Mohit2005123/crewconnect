@@ -8,7 +8,7 @@ import CreateTaskModal from '../../../components/CreateTaskModal';
 import ReviewTaskModal from '../../../components/ReviewTaskModal';
 import AdminTaskInfoModal from '../../../components/AdminTaskInfoModal';
 import Navbar from '../../../components/Navbar';
-import { ref, onValue, push, serverTimestamp, update } from 'firebase/database';
+import { ref, onValue, push, serverTimestamp, update, get } from 'firebase/database';
 import { database } from '../../../lib/firebase'; // Add realtime database to your firebase config
 import ChatBox from '../../../components/ChatBox';
 
@@ -34,6 +34,7 @@ export default function EmployeeTasks() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [chatWidth, setChatWidth] = useState(320); // Add this state
+  const [unreadCount, setUnreadCount] = useState(0); // Add this state
 
   // Move auth check to separate useEffect
   useEffect(() => {
@@ -109,6 +110,12 @@ export default function EmployeeTasks() {
           ...value,
         }));
         setMessages(messageList.sort((a, b) => a.timestamp - b.timestamp));
+        
+        // Count unread messages
+        const unreadMessages = messageList.filter(
+          msg => !msg.readbyAdmin && msg.senderId !== user.uid
+        ).length;
+        setUnreadCount(unreadMessages);
       }
     });
 
@@ -237,11 +244,31 @@ export default function EmployeeTasks() {
       timestamp: serverTimestamp(),
       isAdmin: true,
       senderId: user.uid,
+      readbyEmployee:false,
+      readbyAdmin:true
     });
   };
 
-  const handleChatOpen = () => {
+  const handleChatOpen = async () => {
     setIsChatOpen(true);
+    
+    // Mark all messages as read
+    if (unreadCount > 0) {
+      const chatRef = ref(database, `chats/${user.uid}_${employeeId}`);
+      const snapshot = await get(chatRef);
+      const updates = {};
+      
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          const message = childSnapshot.val();
+          if (!message.readbyAdmin && message.senderId !== user.uid) {
+            updates[`${childSnapshot.key}/readbyAdmin`] = true;
+          }
+        });
+        
+        await update(chatRef, updates);
+      }
+    }
   };
   
   return (
@@ -445,7 +472,6 @@ export default function EmployeeTasks() {
                               )}
                               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
                                 {task.status === 'requested' ? 'Requested ⏳' : task.status}
-
                               </span>
                               <button
                                 onClick={(e) => handleInfoClick(task, e)}
@@ -515,14 +541,24 @@ export default function EmployeeTasks() {
               )}
             </div>
             
-            {/* Add chat button - place this after your main content */}
+            {/* Replace the existing chat button with this */}
             <button
               onClick={handleChatOpen}
-              className="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+              className="fixed bottom-4 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600 transition-colors relative z-[1000]"
+              style={{ 
+                right: isChatOpen ? `${chatWidth + 16}px` : '16px',
+                position: 'fixed',
+                bottom: '16px'
+              }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
