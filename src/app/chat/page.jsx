@@ -18,7 +18,6 @@ export default function AdminChat() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatWidth, setChatWidth] = useState(320); // Add this state
   const [isLoading, setIsLoading] = useState(true); // Add this state
-  const [unreadMessages, setUnreadMessages] = useState({}); // Add this state
   
 
   useEffect(() => {
@@ -43,21 +42,7 @@ export default function AdminChat() {
         setAdmins(adminsList);
         setIsLoading(false); // Set loading to false after fetching
 
-        // Fetch unread messages count for each admin
-        adminsList.forEach(admin => {
-          const chatRef = ref(database, `chats/${admin.id}_${user.uid}`);
-          onValue(chatRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-              console.log(data);
-              const unreadCount = Object.values(data).filter(message =>!message.read).length;
-              setUnreadMessages(prevState => ({ ...prevState, [admin.id]: unreadCount }));
-            } else {
-              setUnreadMessages(prevState => ({ ...prevState, [admin.id]: 0 }));
-            }
-          });
-        });
-        console.log(unreadMessages);
+        // Remove unread messages count fetching
       } catch (error) {
         console.error('Error fetching admins:', error);
         setIsLoading(false); // Set loading to false even if there's an error
@@ -91,19 +76,6 @@ export default function AdminChat() {
   const handleAdminSelect = (admin) => {
     setSelectedAdmin(admin);
     setIsChatOpen(true);
-
-    // Mark messages as read
-    const chatRef = ref(database, `chats/${admin.id}_${user.uid}`);
-    onValue(chatRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        Object.entries(data).forEach(([key, value]) => {
-            update(ref(database, `chats/${admin.id}_${user.uid}/${key}`), { read: true });
-        });
-        // Update unread messages count
-        setUnreadMessages(prevState => ({ ...prevState, [admin.id]: 0 }));
-      }
-    });
   };
 
   const handleSendMessage = (text) => {
@@ -155,11 +127,7 @@ export default function AdminChat() {
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-semibold text-gray-800 truncate">{admin.name}</h3>
                           <p className="text-sm text-gray-500 truncate">{admin.email}</p>
-                          {unreadMessages[admin.id] > 0 && (
-                            <span className="text-red-500 text-sm">
-                              {unreadMessages[admin.id]} unread message(s)
-                            </span>
-                          )}
+                          {/* Remove unread messages display */}
                         </div>
                       </div>
                     </div>

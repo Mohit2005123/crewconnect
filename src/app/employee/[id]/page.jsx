@@ -8,7 +8,7 @@ import CreateTaskModal from '../../../components/CreateTaskModal';
 import ReviewTaskModal from '../../../components/ReviewTaskModal';
 import AdminTaskInfoModal from '../../../components/AdminTaskInfoModal';
 import Navbar from '../../../components/Navbar';
-import { ref, onValue, push, serverTimestamp } from 'firebase/database';
+import { ref, onValue, push, serverTimestamp, update } from 'firebase/database';
 import { database } from '../../../lib/firebase'; // Add realtime database to your firebase config
 import ChatBox from '../../../components/ChatBox';
 
@@ -237,10 +237,13 @@ export default function EmployeeTasks() {
       timestamp: serverTimestamp(),
       isAdmin: true,
       senderId: user.uid,
-      read:false
     });
   };
 
+  const handleChatOpen = () => {
+    setIsChatOpen(true);
+  };
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -308,7 +311,6 @@ export default function EmployeeTasks() {
                                 {task.status === 'requested' ? 'Requested ⏳' : task.status}
                               </span>
                               <button
-                                onClick={(e) => handleInfoClick(task, e)}
                                 className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -515,7 +517,7 @@ export default function EmployeeTasks() {
             
             {/* Add chat button - place this after your main content */}
             <button
-              onClick={() => setIsChatOpen(true)}
+              onClick={handleChatOpen}
               className="fixed bottom-4 right-4 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -564,5 +566,3 @@ export default function EmployeeTasks() {
     </div>
   );
 }
-
-
