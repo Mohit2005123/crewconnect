@@ -15,9 +15,8 @@ export default function TeamPage() {
   useEffect(() => {
     if (!teamId) return;
 
-    // First, get the team document to access the employees array
     const teamDocRef = doc(db, 'teams', teamId);
-    const unsubscribe = onSnapshot(teamDocRef, async (teamDoc) => {
+    const unsubscribeTeam = onSnapshot(teamDocRef, async (teamDoc) => {
       if (!teamDoc.exists()) {
         console.error('Team not found');
         return;
@@ -25,24 +24,31 @@ export default function TeamPage() {
       const teamData = teamDoc.data();
       const employeeIds = teamData.employees || [];
       setTeamName(teamData.name);
-      // Fetch user data for each employee ID
-      const employeePromises = employeeIds.map(async (employeeId) => {
-        const userDoc = await getDoc(doc(db, 'users', employeeId));
-        if (userDoc.exists()) {
-          return {
-            id: userDoc.id,
-            ...userDoc.data()
-          };
-        }
-        return null;
+
+      // Set up real-time listeners for each employee
+      const unsubscribeEmployees = employeeIds.map(employeeId => {
+        return onSnapshot(doc(db, 'users', employeeId), (userDoc) => {
+          if (userDoc.exists()) {
+            setEmployees(prev => {
+              const newEmployees = prev.filter(emp => emp.id !== userDoc.id);
+              return [...newEmployees, {
+                id: userDoc.id,
+                ...userDoc.data()
+              }].sort((a, b) => a.name.localeCompare(b.name));
+            });
+          }
+        });
       });
 
-      const employeeData = await Promise.all(employeePromises);
-      // Filter out any null values (in case some users weren't found)
-      setEmployees(employeeData.filter(employee => employee !== null));
+      // Return cleanup function
+      return () => {
+        unsubscribeEmployees.forEach(unsubscribe => unsubscribe());
+      };
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeTeam();
+    };
   }, [teamId]);
 
   const handleEmployeeClick = (employeeId) => {
@@ -101,15 +107,22 @@ export default function TeamPage() {
                   >
                     <button
                       onClick={(e) => handleRemoveEmployee(employee.id, e)}
-                      className="absolute top-1/2 right-2 -translate-y-1/2 p-1 text-red-600 hover:text-red-800 rounded-full hover:bg-red-100"
+                      className="absolute top-2 right-2 p-1 text-red-600 hover:text-red-800 rounded-full hover:bg-red-100"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                     </button>
-                    <h3 className="font-semibold text-lg text-gray-800 mb-2">
-                      {employee.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2 pr-8">
+                      <h3 className="font-semibold text-lg text-gray-800">
+                        {employee.name}
+                      </h3>
+                      {employee.messageSent && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Pending Message
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">{employee.position}</p>
                   </div>
                 ))}

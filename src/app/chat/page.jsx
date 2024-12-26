@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { ref, onValue, push, serverTimestamp, update } from 'firebase/database'; // Add update import
 import { db, database } from '../../lib/firebase';
 import { useAuth } from '../../components/AuthProvider';
@@ -114,17 +114,23 @@ export default function AdminChat() {
     });
   };
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     if (!selectedAdmin || !user) return;
 
     const chatRef = ref(database, `chats/${selectedAdmin.id}_${user.uid}`);
-    push(chatRef, {
+    await push(chatRef, {
       text,
       timestamp: serverTimestamp(),
       isAdmin: false,
       senderId: user.uid,
-      readbyAdmin: false ,
-      readbyEmployee:true
+      readbyAdmin: false,
+      readbyEmployee: true
+    });
+
+    // Update user document to set messageSent to true
+    const userDocRef = doc(db, 'users', user.uid);
+    await updateDoc(userDocRef, {
+      messageSent: true
     });
   };
 

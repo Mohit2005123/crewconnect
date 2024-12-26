@@ -235,23 +235,44 @@ export default function EmployeeTasks() {
     }
   };
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     if (!employeeId || !user) return;
 
+    // Send message to realtime database
     const chatRef = ref(database, `chats/${user.uid}_${employeeId}`);
-    push(chatRef, {
+    await push(chatRef, {
       text,
       timestamp: serverTimestamp(),
       isAdmin: true,
       senderId: user.uid,
-      readbyEmployee:false,
-      readbyAdmin:true
+      readbyEmployee: false,
+      readbyAdmin: true
     });
+
+    // Update employee's unreadMessage status in Firestore
+    try {
+      const employeeRef = doc(db, 'users', employeeId);
+      await updateDoc(employeeRef, {
+        unreadMessage: true
+      });
+    } catch (error) {
+      console.error('Error updating unreadMessage status:', error);
+    }
   };
 
   const handleChatOpen = async () => {
     setIsChatOpen(true);
     
+    // Update employee's messageSent status
+    try {
+      const employeeRef = doc(db, 'users', employeeId);
+      await updateDoc(employeeRef, {
+        messageSent: false
+      });
+    } catch (error) {
+      console.error('Error updating messageSent status:', error);
+    }
+
     // Mark all messages as read
     if (unreadCount > 0) {
       const chatRef = ref(database, `chats/${user.uid}_${employeeId}`);
@@ -288,12 +309,28 @@ export default function EmployeeTasks() {
                 <h1 className="text-3xl font-bold text-gray-800">
                   {employeeName ? `${employeeName}'s Tasks` : 'Loading...'}
                 </h1>
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Create Task
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleChatOpen}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    Chat
+                    {unreadCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Create Task
+                  </button>
+                </div>
               </div>
               
               {tasks.length === 0 ? (
