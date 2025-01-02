@@ -11,6 +11,7 @@ import Navbar from '../../../components/Navbar';
 import { ref, onValue, push, serverTimestamp, update, get } from 'firebase/database';
 import { database } from '../../../lib/firebase'; // Add realtime database to your firebase config
 import ChatBox from '../../../components/ChatBox';
+import ShowCommentsModal from '../../../components/ShowCommentsModal';
 
 export default function EmployeeTasks() {
   const router = useRouter();
@@ -35,6 +36,8 @@ export default function EmployeeTasks() {
   const [messages, setMessages] = useState([]);
   const [chatWidth, setChatWidth] = useState(320); // Add this state
   const [unreadCount, setUnreadCount] = useState(0); // Add this state
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [selectedTaskComments, setSelectedTaskComments] = useState([]);
 
   // Move auth check to separate useEffect
   useEffect(() => {
@@ -291,6 +294,12 @@ export default function EmployeeTasks() {
       }
     }
   };
+
+  const handleCommentsClick = (task, e) => {
+    e.stopPropagation();
+    setSelectedTaskComments(task.comments || []);
+    setIsCommentsModalOpen(true);
+  };
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -375,6 +384,14 @@ export default function EmployeeTasks() {
                                 {task.status === 'requested' ? 'Requested ⏳' : task.status}
                               </span>
                               <button
+                                onClick={(e) => handleCommentsClick(task, e)}
+                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                </svg>
+                              </button>
+                              <button
                                 className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -451,6 +468,14 @@ export default function EmployeeTasks() {
                                 {task.status}
                               </span>
                               <button
+                                onClick={(e) => handleCommentsClick(task, e)}
+                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                </svg>
+                              </button>
+                              <button
                                 onClick={(e) => handleInfoClick(task, e)}
                                 className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
                               >
@@ -511,6 +536,14 @@ export default function EmployeeTasks() {
                                 {task.status === 'requested' ? 'Requested ⏳' : task.status}
                               </span>
                               <button
+                                onClick={(e) => handleCommentsClick(task, e)}
+                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                </svg>
+                              </button>
+                              <button
                                 onClick={(e) => handleInfoClick(task, e)}
                                 className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
                               >
@@ -557,6 +590,14 @@ export default function EmployeeTasks() {
                               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusStyle(task.status)}`}>
                                 {task.status}
                               </span>
+                              <button
+                                onClick={(e) => handleCommentsClick(task, e)}
+                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                </svg>
+                              </button>
                               <button
                                 onClick={(e) => handleInfoClick(task, e)}
                                 className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
@@ -635,6 +676,12 @@ export default function EmployeeTasks() {
           setSelectedInfoTask(null);
         }}
         task={selectedInfoTask}
+      />
+
+      <ShowCommentsModal
+        isOpen={isCommentsModalOpen}
+        onClose={() => setIsCommentsModalOpen(false)}
+        comments={selectedTaskComments}
       />
     </div>
   );

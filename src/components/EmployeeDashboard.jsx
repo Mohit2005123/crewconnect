@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import TaskInfoModal from './TaskInfoModal';
 import axios from 'axios';
 import JoinTeamModal from './JoinTeamModal';
+import CommentsModal from './CommentsModal';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -20,6 +21,8 @@ export default function EmployeeDashboard() {
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
+  const [selectedTaskForComments, setSelectedTaskForComments] = useState(null);
 
   // Function to convert Firestore Timestamp to Date
   const convertTimestampToDate = (timestamp) => {
@@ -223,6 +226,15 @@ export default function EmployeeDashboard() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => {
+                        setSelectedTaskForComments(task);
+                        setIsCommentsModalOpen(true);
+                      }}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow"
+                    >
+                      Comments
+                    </button>
+                    <button
+                      onClick={() => {
                         setSelectedTask(task);
                         setIsInfoModalOpen(true);
                       }}
@@ -262,6 +274,16 @@ export default function EmployeeDashboard() {
         isOpen={isJoinTeamModalOpen}
         onClose={() => setIsJoinTeamModalOpen(false)}
         userId={user?.uid}
+      />
+
+      {/* Add CommentsModal */}
+      <CommentsModal
+        task={selectedTaskForComments}
+        isOpen={isCommentsModalOpen}
+        onClose={() => {
+          setIsCommentsModalOpen(false);
+          setSelectedTaskForComments(null);
+        }}
       />
     </div>
   );
