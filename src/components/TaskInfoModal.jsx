@@ -89,7 +89,11 @@ export default function TaskInfoModal({ task, isOpen, onClose, onComplete }) {
                 <div>
                   <h3 className="font-medium text-black">Deadline</h3>
                   <p className="text-gray-600">
-                    {task.deadline?.toDate().toLocaleString()}
+                    {task.deadline?.toDate().toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    })}
                   </p>
                 </div>
 
