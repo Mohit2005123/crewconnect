@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: 'Employee Management App',
+  title: 'RBNA Crew Connect',
   description: 'Manage tasks and employees efficiently',
 }
 
