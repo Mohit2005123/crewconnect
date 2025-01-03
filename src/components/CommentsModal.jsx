@@ -12,7 +12,11 @@ export default function CommentsModal({ task, isOpen, onClose }) {
 
   useEffect(() => {
     if (task?.comments) {
+      // Only set comments if task exists and has comments
       setLocalComments(task.comments);
+    } else {
+      // Reset comments when task is null or has no comments
+      setLocalComments([]);
     }
   }, [task]);
 
@@ -23,13 +27,14 @@ export default function CommentsModal({ task, isOpen, onClose }) {
   };
 
   const handleAddComment = async () => {
-    if (!comment.trim() || isSubmitting) return;
+    if (!comment.trim() || isSubmitting || !task) return;
 
     setIsSubmitting(true);
     const newComment = {
       text: comment.trim(),
       timestamp: new Date(),
-      userId: task.assignedTo
+      userId: task.assignedTo,
+      taskId: task.id  // Add taskId to the comment
     };
 
     try {
@@ -45,6 +50,11 @@ export default function CommentsModal({ task, isOpen, onClose }) {
       setIsSubmitting(false);
     }
   };
+
+  // Safe filter for comments
+  const taskComments = task ? localComments.filter(comment => 
+    comment.taskId === task.id || !comment.taskId // handle both new and old comments
+  ) : [];
 
   const formatDate = (timestamp) => {
     const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
@@ -87,11 +97,11 @@ export default function CommentsModal({ task, isOpen, onClose }) {
 
             <div className="space-y-4">
               <div className="max-h-96 overflow-y-auto">
-                {localComments.length === 0 ? (
+                {taskComments.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">No comments yet</p>
                 ) : (
                   <div className="space-y-2">
-                    {[...localComments].reverse().map((comment, index) => (
+                    {[...taskComments].reverse().map((comment, index) => (
                       <div key={index} className="bg-gray-50 p-2 rounded">
                         <p className="text-gray-600">{comment.text}</p>
                         <p className="text-xs text-gray-400">
