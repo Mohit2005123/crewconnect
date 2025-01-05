@@ -10,7 +10,8 @@ function TeamCard({ team, userId, onCopyTeamId, onViewTeam, onDeleteTeam, isAdmi
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow w-full sm:w-[20rem]">
+            {/* Reduced width from 40rem to 20rem */}
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 {team.name}
             </h3>
