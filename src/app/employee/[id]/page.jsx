@@ -295,10 +295,23 @@ export default function EmployeeTasks() {
     }
   };
 
-  const handleCommentsClick = (task, e) => {
+  // Modify the handleCommentsClick function to update newComment status
+  const handleCommentsClick = async (task, e) => {
     e.stopPropagation();
     setSelectedTaskComments(task.comments || []);
     setIsCommentsModalOpen(true);
+
+    // If there's a new comment and it's a task assigned by the current user, update the status
+    if (task.newComment && task.assignedBy === user.uid) {
+      try {
+        const taskRef = doc(db, 'tasks', task.id);
+        await updateDoc(taskRef, {
+          newComment: false
+        });
+      } catch (error) {
+        console.error('Error updating newComment status:', error);
+      }
+    }
   };
   
   return (
@@ -385,7 +398,15 @@ export default function EmployeeTasks() {
                               </span>
                               <button
                                 onClick={(e) => handleCommentsClick(task, e)}
-                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                                className={`p-2 rounded-full hover:bg-blue-50 transition-all duration-200 ${
+                                  task.assignedBy === user.uid
+                                    ? task.newComment
+                                      ? 'text-red-600 hover:text-red-700 bg-red-50 scale-110' 
+                                      : task.comments?.length > 0
+                                        ? 'text-green-600 hover:text-green-700 bg-green-50' 
+                                        : 'text-gray-400 hover:text-gray-600'
+                                    : 'text-gray-400 hover:text-gray-600'
+                                }`}
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -470,7 +491,15 @@ export default function EmployeeTasks() {
                               </span>
                               <button
                                 onClick={(e) => handleCommentsClick(task, e)}
-                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                                className={`p-2 rounded-full hover:bg-blue-50 transition-all duration-200 ${
+                                  task.assignedBy === user.uid
+                                    ? task.newComment
+                                      ? 'text-red-600 hover:text-red-700 bg-red-50 scale-110' 
+                                      : task.comments?.length > 0
+                                        ? 'text-green-600 hover:text-green-700 bg-green-50' 
+                                        : 'text-gray-400 hover:text-gray-600'
+                                    : 'text-gray-400 hover:text-gray-600'
+                                }`}
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -538,7 +567,7 @@ export default function EmployeeTasks() {
                               </span>
                               <button
                                 onClick={(e) => handleCommentsClick(task, e)}
-                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                                className="p-2 rounded-full hover:bg-blue-50 transition-all duration-200 text-gray-400 hover:text-gray-600"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -593,7 +622,7 @@ export default function EmployeeTasks() {
                               </span>
                               <button
                                 onClick={(e) => handleCommentsClick(task, e)}
-                                className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                                className="p-2 rounded-full hover:bg-blue-50 transition-all duration-200 text-gray-400 hover:text-gray-600"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />

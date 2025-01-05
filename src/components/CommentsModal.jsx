@@ -34,13 +34,14 @@ export default function CommentsModal({ task, isOpen, onClose }) {
       text: comment.trim(),
       timestamp: new Date(),
       userId: task.assignedTo,
-      taskId: task.id  // Add taskId to the comment
+      taskId: task.id
     };
 
     try {
       const taskRef = doc(db, 'tasks', task.id);
       await updateDoc(taskRef, {
-        comments: arrayUnion(newComment)
+        comments: arrayUnion(newComment),
+        newComment: true
       });
       setLocalComments([...localComments, newComment]);
       setComment('');
