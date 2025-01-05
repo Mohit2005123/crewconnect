@@ -392,6 +392,7 @@ export default function EmployeeTasks() {
                                 </svg>
                               </button>
                               <button
+                                onClick={(e) => handleInfoClick(task, e)}
                                 className="p-2 text-blue-500 hover:text-blue-600 rounded-full hover:bg-blue-50"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
