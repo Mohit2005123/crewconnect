@@ -39,8 +39,8 @@ export default function AdminTaskInfoModal({ isOpen, onClose, task }) {
                 { label: "Title", value: task.title },
                 { label: "Description", value: task.description || 'No description provided' },
                 { label: "Status", value: task.status, className: "capitalize" },
-                { label: "Created At", value: task.createdAt ? new Date(task.createdAt.toDate()).toLocaleString() : 'N/A' },
-                { label: "Deadline", value: task.deadline ? new Date(task.deadline.toDate()).toLocaleString() : 'N/A' }
+                { label: "Created At", value: task.createdAt ? new Date(task.createdAt.toDate()).toLocaleDateString('en-GB') : 'N/A' },
+                { label: "Deadline", value: task.deadline ? new Date(task.deadline.toDate()).toLocaleDateString('en-GB') : 'N/A' }
               ].map((item, index) => (
                 <motion.div
                   key={item.label}
