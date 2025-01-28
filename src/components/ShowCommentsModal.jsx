@@ -1,6 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+const formatDate = (timestamp) => {
+  const date = new Date(timestamp?.toDate?.() || timestamp);
+  return date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
 export default function ShowCommentsModal({ isOpen, onClose, comments = [] }) {
   if (!isOpen) return null;
 
@@ -67,7 +76,7 @@ export default function ShowCommentsModal({ isOpen, onClose, comments = [] }) {
                   <div className="flex justify-between items-start mb-2">
                     <span className="font-medium text-gray-800">{comment.author}</span>
                     <span className="text-sm text-gray-500">
-                      {new Date(comment.timestamp?.toDate?.() || comment.timestamp).toLocaleDateString()}
+                      {formatDate(comment.timestamp)}
                     </span>
                   </div>
                   <p className="text-gray-700 leading-relaxed">{comment.text}</p>

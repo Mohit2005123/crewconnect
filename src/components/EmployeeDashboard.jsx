@@ -117,7 +117,7 @@ export default function EmployeeDashboard() {
 
   const handleCompleteTask = async (taskId, taskTitle) => {
     try {
-      const currentTime = new Date().toLocaleString();
+      const currentTime = new Date().toLocaleDateString('en-GB'); // Changed to dd/mm/yyyy format
       await updateDoc(doc(db, 'tasks', taskId), {
         status: 'requested',
         completedAt: new Date()
@@ -130,7 +130,7 @@ export default function EmployeeDashboard() {
       const response = await axios.post('/api/sendTaskMail', {
         to: assignedByEmail,
         subject: 'Task Completed',
-        message: `The task titled "${taskTitle}" has been completed at ${currentTime} by ${user.email}.`
+        message: `The task titled "${taskTitle}" has been completed on ${currentTime} by ${user.email}.`
       });
 
     } catch (error) {
