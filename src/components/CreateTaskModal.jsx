@@ -22,6 +22,16 @@ export default function CreateTaskModal({
       .filter(link => link !== '');
   };
 
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    return new Date(date).toISOString().split('T')[0];
+  };
+
+  const formatDateForDisplay = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-GB'); // dd/mm/yyyy format
+  };
+
   const handleCreateTask = async (e) => {
     e.preventDefault();
 
@@ -48,6 +58,7 @@ export default function CreateTaskModal({
         createdAt: new Date(),
         assignedBy: currentUser.uid,
         deadline: new Date(deadline),
+        deadlineFormatted: formatDateForDisplay(deadline),
         referenceLinks: linksArray
       });
 
@@ -67,7 +78,7 @@ export default function CreateTaskModal({
             <p>A new task has been assigned to you:</p>
             <h3>${newTask.title}</h3>
             <p><strong>Description:</strong><br>${newTask.description}</p>
-            <p><strong>Deadline:</strong> ${new Date(deadline).toLocaleString()}</p>
+            <p><strong>Deadline:</strong> ${formatDateForDisplay(deadline)}</p>
             ${linksArray.length > 0 ? `
               <p><strong>Reference Links:</strong></p>
               <ul>
@@ -143,7 +154,7 @@ export default function CreateTaskModal({
                   <input
                     type="date"
                     required
-                    value={deadline}
+                    value={formatDateForInput(deadline)}
                     onChange={(e) => setDeadline(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
